@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JSON Formatter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f7f7f8; --surface: #ffffff; --surface-2: #f1f2f4; --border: #e3e5e8;
+  --text: #17181c; --muted: #6b7080; --accent: #4f46e5; --accent-fg: #fff;
+  --ok: #15803d; --err: #dc2626; --err-bg: #fef2f2;
+  --k: #7c3aed; --s: #0f766e; --n: #c2410c; --b: #2563eb; --nl: #9ca3af; --p: #6b7080;
+  --shadow: 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d0e11; --surface: #15171c; --surface-2: #1c1f26; --border: #2a2e37;
+    --text: #e7e9ee; --muted: #8b91a1; --accent: #818cf8; --accent-fg: #0d0e11;
+    --ok: #4ade80; --err: #f87171; --err-bg: #2a1416;
+    --k: #c4b5fd; --s: #5eead4; --n: #fdba74; --b: #93c5fd; --nl: #6b7280; --p: #8b91a1;
+    --shadow: none; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d0e11; --surface: #15171c; --surface-2: #1c1f26; --border: #2a2e37;
+  --text: #e7e9ee; --muted: #8b91a1; --accent: #818cf8; --accent-fg: #0d0e11;
+  --ok: #4ade80; --err: #f87171; --err-bg: #2a1416;
+  --k: #c4b5fd; --s: #5eead4; --n: #fdba74; --b: #93c5fd; --nl: #6b7280; --p: #8b91a1;
+  --shadow: none; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--text); font: 14px/1.5 Inter, system-ui, sans-serif; display: flex; flex-direction: column; }
+svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+header { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; }
+.logo-mark { width: 28px; height: 28px; border-radius: 7px; background: var(--accent); color: var(--accent-fg); display: grid; place-items: center; font: 600 13px "JetBrains Mono", monospace; }
+.spacer { flex: 1; }
+
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
+.group { display: flex; align-items: center; gap: 6px; }
+.divider { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+
+button, select { font: inherit; color: inherit; }
+.btn { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-weight: 500; font-size: 13px; transition: background .12s, border-color .12s; }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.icon { width: 32px; padding: 0; justify-content: center; }
+.btn:focus-visible, select:focus-visible, .switch input:focus-visible + span, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+label.field { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
+select { height: 32px; padding: 0 28px 0 10px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b91a1' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center / 14px; appearance: none; cursor: pointer; font-size: 13px; color: var(--text); }
+
+.switch { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: var(--muted); user-select: none; }
+.switch input { position: absolute; opacity: 0; pointer-events: none; }
+.switch span { width: 30px; height: 18px; border-radius: 9px; background: var(--border); position: relative; transition: background .15s; }
+.switch span::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+.switch input:checked + span { background: var(--accent); }
+.switch input:checked + span::after { transform: translateX(12px); }
+
+main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px 20px; min-height: 0; }
+.pane { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); min-height: 0; overflow: hidden; }
+.pane-head { display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 14px; border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.pane-head .btn { height: 28px; font-size: 12px; text-transform: none; letter-spacing: 0; }
+.pane-head .btn.icon { width: 28px; }
+.editor { flex: 1; display: flex; min-height: 0; font: 13px/1.6 "JetBrains Mono", ui-monospace, monospace; }
+.gutter { padding: 12px 10px 12px 14px; text-align: right; color: var(--nl); user-select: none; background: var(--surface); white-space: pre; overflow: hidden; min-width: 44px; }
+textarea, .output { flex: 1; margin: 0; padding: 12px 14px 12px 4px; border: 0; background: transparent; color: var(--text); font: inherit; resize: none; outline: none; white-space: pre; overflow: auto; tab-size: 2; }
+textarea::placeholder { color: var(--nl); }
+.output:empty::before { content: attr(data-empty); color: var(--nl); }
+.tk-k { color: var(--k); } .tk-s { color: var(--s); } .tk-n { color: var(--n); } .tk-b { color: var(--b); } .tk-null { color: var(--nl); font-style: italic; } .tk-p { color: var(--p); }
+
+.status { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); min-height: 36px; }
+.status.ok .dot { background: var(--ok); } .status.err { color: var(--err); background: var(--err-bg); }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--nl); }
+.status.err .dot { background: var(--err); }
+.status .meta { margin-left: auto; font-variant-numeric: tabular-nums; }
+
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translate(-50%, 12px); background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 13px; display: flex; align-items: center; gap: 8px; opacity: 0; pointer-events: none; transition: .18s; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+kbd { font: 11px "JetBrains Mono", monospace; padding: 1px 5px; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; color: var(--muted); }
+.hint { font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+
+@media (max-width: 860px) {
+  main { grid-template-columns: 1fr; grid-auto-rows: minmax(320px, 1fr); padding: 12px 16px; }
+  header, .toolbar { padding-left: 16px; padding-right: 16px; }
+  .hint, .divider { display: none; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><div class="logo-mark">{}</div>JSON Formatter</div>
+  <div class="spacer"></div>
+  <span class="hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> 整形</span>
+  <button class="btn icon" id="themeBtn" title="テーマ切替" aria-label="テーマ切替">
+    <svg id="themeIcon" viewBox="0 0 24 24"></svg>
+  </button>
+</header>
+
+<div class="toolbar">
+  <div class="group">
+    <button class="btn primary" id="formatBtn"><svg viewBox="0 0 24 24"><path d="M21 10H3M21 6H3M21 14H3M17 18H3"/></svg>整形</button>
+    <button class="btn" id="minifyBtn"><svg viewBox="0 0 24 24"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></svg>圧縮</button>
+    <button class="btn" id="validateBtn"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>検証</button>
+  </div>
+  <div class="divider"></div>
+  <label class="field">インデント
+    <select id="indent">
+      <option value="2">2 スペース</option>
+      <option value="4">4 スペース</option>
+      <option value="tab">タブ</option>
+    </select>
+  </label>
+  <label class="switch"><input type="checkbox" id="sortKeys"><span></span>キーをソート</label>
+  <label class="switch"><input type="checkbox" id="autoFmt" checked><span></span>自動整形</label>
+</div>
+
+<main>
+  <section class="pane">
+    <div class="pane-head">入力
+      <div class="spacer"></div>
+      <button class="btn" id="sampleBtn"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>サンプル</button>
+      <button class="btn icon" id="uploadBtn" title="ファイルを開く" aria-label="ファイルを開く"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg></button>
+      <button class="btn icon" id="pasteBtn" title="貼り付け" aria-label="貼り付け"><svg viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg></button>
+      <button class="btn icon" id="clearBtn" title="クリア" aria-label="クリア"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+      <input type="file" id="file" accept=".json,application/json,text/plain" hidden>
+    </div>
+    <div class="editor">
+      <div class="gutter" id="inGutter">1</div>
+      <textarea id="input" spellcheck="false" placeholder='ここに JSON を貼り付け、またはファイルをドロップ&#10;&#10;{"hello": "world"}'></textarea>
+    </div>
+    <div class="status" id="inStatus"><span class="dot"></span><span id="inMsg">入力待ち</span><span class="meta" id="inMeta"></span></div>
+  </section>
+
+  <section class="pane">
+    <div class="pane-head">出力
+      <div class="spacer"></div>
+      <button class="btn" id="copyBtn"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>コピー</button>
+      <button class="btn icon" id="downloadBtn" title="ダウンロード" aria-label="ダウンロード"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>
+    </div>
+    <div class="editor">
+      <div class="gutter" id="outGutter">1</div>
+      <pre class="output" id="output" tabindex="0" data-empty="整形結果がここに表示されます"></pre>
+    </div>
+    <div class="status" id="outStatus"><span class="dot"></span><span id="outMsg">—</span><span class="meta" id="outMeta"></span></div>
+  </section>
+</main>
+
+<div class="toast" id="toast"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span id="toastMsg"></span></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const input = $('input'), output = $('output');
+let result = '';
+
+const SUN = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+const MOON = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>';
+function store(k, v) { try { v === undefined ? null : localStorage.setItem(k, v); return localStorage.getItem(k); } catch { return null; } }
+function isDark() { const t = document.documentElement.dataset.theme; return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; }
+function paintTheme() { $('themeIcon').innerHTML = isDark() ? SUN : MOON; }
+const saved = store('jf-theme'); if (saved) document.documentElement.dataset.theme = saved;
+paintTheme();
+$('themeBtn').onclick = () => { const t = isDark() ? 'light' : 'dark'; document.documentElement.dataset.theme = t; store('jf-theme', t); paintTheme(); };
+
+const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+function highlight(json) {
+  return esc(json).replace(/("(?:\\.|[^"\\])*")(\s*:)?|\b(true|false)\b|\bnull\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|[{}\[\],]/g, (m, str, colon, bool) => {
+    if (str) return colon ? `<span class="tk-k">${str}</span><span class="tk-p">${colon}</span>` : `<span class="tk-s">${str}</span>`;
+    if (bool) return `<span class="tk-b">${m}</span>`;
+    if (m === 'null') return `<span class="tk-null">${m}</span>`;
+    if (/[{}\[\],]/.test(m)) return `<span class="tk-p">${m}</span>`;
+    return `<span class="tk-n">${m}</span>`;
+  });
+}
+const sortDeep = v => Array.isArray(v) ? v.map(sortDeep)
+  : v && typeof v === 'object' ? Object.keys(v).sort().reduce((o, k) => (o[k] = sortDeep(v[k]), o), {}) : v;
+
+function lines(n) { return Array.from({ length: Math.max(n, 1) }, (_, i) => i + 1).join('\n'); }
+const bytes = s => { const b = new Blob([s]).size; return b < 1024 ? `${b} B` : `${(b / 1024).toFixed(1)} KB`; };
+
+function locate(text, err) {
+  const m = /position (\d+)/.exec(err.message);
+  const lc = /line (\d+) column (\d+)/.exec(err.message);
+  if (lc) return { line: +lc[1], col: +lc[2] };
+  if (!m) return null;
+  const before = text.slice(0, +m[1]).split('\n');
+  return { line: before.length, col: before.at(-1).length + 1 };
+}
+function setStatus(el, cls, msg, meta = '') {
+  el.className = 'status ' + cls; el.children[1].textContent = msg; el.children[2].textContent = meta;
+}
+function depth(v) { return v && typeof v === 'object' ? 1 + Math.max(0, ...Object.values(v).map(depth)) : 0; }
+
+function run(mode = 'format', quiet = false) {
+  const text = input.value;
+  if (!text.trim()) { result = ''; output.innerHTML = ''; $('outGutter').textContent = '1';
+    setStatus($('inStatus'), '', '入力待ち'); setStatus($('outStatus'), '', '—'); return; }
+  let data;
+  try { data = JSON.parse(text); }
+  catch (e) {
+    const loc = locate(text, e);
+    setStatus($('inStatus'), 'err', (loc ? `${loc.line} 行 ${loc.col} 列: ` : '') + e.message.replace(/^JSON\.parse: /, ''));
+    if (!quiet) toast('構文エラーがあります', true);
+    return;
+  }
+  const keys = (function count(v) { return v && typeof v === 'object' ? Object.values(v).reduce((a, x) => a + count(x), Array.isArray(v) ? 0 : Object.keys(v).length) : 0; })(data);
+  setStatus($('inStatus'), 'ok', '有効な JSON', `${keys} キー · 深さ ${depth(data)} · ${bytes(text)}`);
+  if (mode === 'validate') { if (!quiet) toast('有効な JSON です'); return; }
+  if ($('sortKeys').checked) data = sortDeep(data);
+  const ind = $('indent').value === 'tab' ? '\t' : +$('indent').value;
+  result = mode === 'minify' ? JSON.stringify(data) : JSON.stringify(data, null, ind);
+  output.innerHTML = highlight(result);
+  const n = result.split('\n').length;
+  $('outGutter').textContent = lines(n);
+  setStatus($('outStatus'), 'ok', mode === 'minify' ? '圧縮済み' : '整形済み', `${n} 行 · ${bytes(result)}`);
+}
+let lastMode = 'format';
+const act = m => () => { lastMode = m === 'validate' ? lastMode : m; run(m); };
+$('formatBtn').onclick = act('format'); $('minifyBtn').onclick = act('minify'); $('validateBtn').onclick = act('validate');
+['indent', 'sortKeys'].forEach(id => $(id).onchange = () => run(lastMode, true));
+
+let timer;
+input.addEventListener('input', () => {
+  $('inGutter').textContent = lines(input.value.split('\n').length);
+  clearTimeout(timer);
+  timer = setTimeout(() => $('autoFmt').checked ? run(lastMode, true) : run('validate', true), 250);
+});
+input.addEventListener('scroll', () => $('inGutter').scrollTop = input.scrollTop);
+output.addEventListener('scroll', () => $('outGutter').scrollTop = output.scrollTop);
+input.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); lastMode = 'format'; run('format'); }
+  if (e.key === 'Tab') { e.preventDefault(); document.execCommand('insertText', false, '  '); }
+});
+function setInput(v) { input.value = v; input.dispatchEvent(new Event('input')); clearTimeout(timer); run(lastMode, true); }
+
+let tt;
+function toast(msg, err) { $('toastMsg').textContent = msg; $('toast').style.background = err ? 'var(--err)' : ''; $('toast').classList.add('show'); clearTimeout(tt); tt = setTimeout(() => $('toast').classList.remove('show'), 1600); }
+
+$('copyBtn').onclick = async () => { if (!result) return toast('コピーする内容がありません', true);
+  try { await navigator.clipboard.writeText(result); toast('クリップボードにコピーしました'); } catch { toast('コピーできませんでした', true); } };
+$('pasteBtn').onclick = async () => { try { setInput(await navigator.clipboard.readText()); } catch { toast('貼り付けの権限がありません', true); } };
+$('clearBtn').onclick = () => { setInput(''); input.focus(); };
+$('downloadBtn').onclick = () => { if (!result) return toast('ダウンロードする内容がありません', true);
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([result], { type: 'application/json' })), download: 'formatted.json' });
+  a.click(); URL.revokeObjectURL(a.href); };
+$('uploadBtn').onclick = () => $('file').click();
+const readFile = f => f && f.text().then(setInput);
+$('file').onchange = e => readFile(e.target.files[0]);
+input.addEventListener('dragover', e => e.preventDefault());
+input.addEventListener('drop', e => { e.preventDefault(); readFile(e.dataTransfer.files[0]); });
+$('sampleBtn').onclick = () => setInput(JSON.stringify({ name: "json-formatter", version: "1.0.0", private: true,
+  author: { name: "Dev", email: null }, tags: ["json", "formatter", "devtools"],
+  config: { indent: 2, sortKeys: false, theme: "auto", ratio: 0.75 } }));
+</script>
+</body>
+</html>
