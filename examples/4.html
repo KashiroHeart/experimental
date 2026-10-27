@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>#4 基数変換 C 基数バー | sandbox</title>
+<link rel="stylesheet" href="/assets/examples-header.css">
+<script src="/assets/examples-header.js" defer></script>
+<style>
+:root{color-scheme:light}
+body{margin:0;background:#fff;color:#1a1a1a;font-family:"Hiragino Sans","Yu Gothic UI","Noto Sans JP",system-ui,sans-serif;font-size:16px;line-height:1.5}
+.lbl{font-size:13px;color:#595959}
+.fld{box-sizing:border-box;width:100%;border:1px solid #8c8c8c;border-radius:4px;background:#fff;color:#1a1a1a;font:inherit;padding:10px 12px;outline:none;overflow-wrap:anywhere}
+.fld.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+.fld::placeholder{color:#767676}
+.fld:hover{border-color:#1d4ed8}
+.fld:focus-visible{border-color:#1d4ed8;box-shadow:0 0 0 1px #1d4ed8}
+.fld[readonly]{background:#f2f2f2}
+.fld[readonly]:hover{border-color:#8c8c8c}
+.fld[readonly]:focus-visible{border-color:#1d4ed8;box-shadow:0 0 0 1px #1d4ed8}
+.fld[aria-invalid="true"],.fld[aria-invalid="true"]:hover,.fld[aria-invalid="true"]:focus-visible{border-color:#b42318;box-shadow:0 0 0 1px #b42318}
+.btn{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border:1px solid #8c8c8c;border-radius:4px;background:#fff;color:#1a1a1a;font:inherit;cursor:pointer;position:relative}
+.btn:hover{border-color:#1d4ed8;color:#1d4ed8;z-index:1}
+.btn:focus-visible{outline:2px solid #1d4ed8;outline-offset:2px}
+.btn:active{background:#f2f2f2}
+.btn.sq{width:44px;padding:0;font-size:20px;line-height:1}
+.btn[aria-pressed="true"]{background:#1a1a1a;border-color:#1a1a1a;color:#fff}
+.btn[aria-pressed="true"]:hover{border-color:#1d4ed8;box-shadow:0 0 0 1px #1d4ed8;color:#fff}
+.seg{display:inline-flex}
+.seg .btn{border-radius:0}
+.seg .btn:first-child{border-radius:4px 0 0 4px}
+.seg .btn:last-child{border-radius:0 4px 4px 0}
+.seg .btn + .btn{margin-left:-1px}
+.chk{display:inline-flex;align-items:center;gap:10px;min-height:44px;cursor:pointer}
+.chk input{width:20px;height:20px;margin:0;accent-color:#1a1a1a;cursor:pointer}
+.chk input:focus-visible{outline:2px solid #1d4ed8;outline-offset:2px}
+.chk:hover{color:#1d4ed8}
+.msg{margin:0;min-height:20px;font-size:13px;line-height:20px;color:#b42318}
+</style>
+</head>
+<body>
+<div style="min-height:100vh;box-sizing:border-box;padding:48px 24px;display:flex;justify-content:center;align-items:flex-start;background:#fff">
+<main style="width:100%;max-width:640px;display:flex;flex-direction:column;gap:20px">
+
+<header style="display:flex;align-items:baseline;gap:12px">
+<h1 style="margin:0;font-size:24px;font-weight:600;line-height:1.3">基数変換</h1>
+<span class="lbl">Base Converter</span>
+</header>
+
+<section aria-label="基数" style="display:flex;flex-direction:column;gap:4px">
+<div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:center;gap:16px 32px;padding:20px 0 12px;border-top:1px solid #d9d9d9;border-bottom:1px solid #d9d9d9">
+
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+<label class="lbl" for="c-inbase">入力基数 (2〜36)</label>
+<div style="display:flex;align-items:center;gap:8px">
+<button type="button" id="c-inbase-dec" class="btn sq" aria-label="入力基数を 1 減らす">−</button>
+<input id="c-inbase" class="fld mono" style="width:88px;height:56px;padding:0 8px;text-align:center;font-size:30px" type="text" inputmode="numeric" autocomplete="off" value="10" aria-invalid="false" aria-describedby="c-bar-msg">
+<button type="button" id="c-inbase-inc" class="btn sq" aria-label="入力基数を 1 増やす">+</button>
+</div>
+</div>
+
+<div style="margin-bottom:6px">
+<button type="button" id="c-swap" class="btn">
+<svg width="20" height="20" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" aria-hidden="true"><path d="M4 8h16M16 4l4 4-4 4M20 16H4M8 12l-4 4 4 4"></path></svg>
+<span>入れ替え</span>
+</button>
+</div>
+
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+<label class="lbl" for="c-outbase">出力基数 (2〜36)</label>
+<div style="display:flex;align-items:center;gap:8px">
+<button type="button" id="c-outbase-dec" class="btn sq" aria-label="出力基数を 1 減らす">−</button>
+<input id="c-outbase" class="fld mono" style="width:88px;height:56px;padding:0 8px;text-align:center;font-size:30px" type="text" inputmode="numeric" autocomplete="off" value="16" aria-invalid="false" aria-describedby="c-bar-msg">
+<button type="button" id="c-outbase-inc" class="btn sq" aria-label="出力基数を 1 増やす">+</button>
+</div>
+</div>
+
+</div>
+<p id="c-bar-msg" class="msg" style="text-align:center" aria-live="polite"></p>
+</section>
+
+<section aria-label="数値" style="display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;flex-direction:column;gap:6px">
+<label class="lbl" for="c-in">入力数値</label>
+<textarea id="c-in" class="fld mono" style="font-size:20px;line-height:1.4;resize:vertical" rows="2" spellcheck="false" autocomplete="off" placeholder="数値を入力" aria-invalid="false" aria-describedby="c-in-msg">255</textarea>
+<p id="c-in-msg" class="msg" aria-live="polite"></p>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<label class="lbl" for="c-out">出力数値 (読み取り専用)</label>
+<textarea id="c-out" class="fld mono" style="font-size:20px;line-height:1.4;resize:vertical" rows="2" readonly="readonly" spellcheck="false" placeholder="結果">FF</textarea>
+</div>
+</section>
+
+<section aria-label="オプション" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 32px;padding-top:12px;border-top:1px solid #d9d9d9">
+<label class="chk"><input type="checkbox" id="c-ignore" checked><span>基数にない文字を無視する</span></label>
+<div style="display:flex;align-items:center;gap:12px;min-height:44px">
+<span class="lbl">出力の英字</span>
+<div class="seg" role="group" aria-label="出力の英字">
+<button type="button" class="btn" id="c-lower" aria-pressed="false">小文字</button>
+<button type="button" class="btn" id="c-upper" aria-pressed="true">大文字</button>
+</div>
+</div>
+</section>
+
+</main>
+</div>
+<script>
+function parseBase(s) {
+  const t = String(s).trim();
+  if (!/^\d+$/.test(t)) return null;
+  const n = Number(t);
+  return n >= 2 && n <= 36 ? n : null;
+}
+
+function convert(value, inBase, outBase, ignore, upper) {
+  const r = { out: '', numErr: '', inErr: '', outErr: '' };
+  const bi = parseBase(inBase);
+  const bo = parseBase(outBase);
+  if (bi === null) r.inErr = '入力基数は 2〜36 の整数で指定してください';
+  if (bo === null) r.outErr = '出力基数は 2〜36 の整数で指定してください';
+  if (bi === null || bo === null) return r;
+
+  let n = 0n;
+  const B = BigInt(bi);
+  let any = false;
+  const bad = [];
+  for (const ch of String(value).toLowerCase()) {
+    const d = /^[0-9a-z]$/.test(ch) ? parseInt(ch, 36) : -1;
+    if (d >= 0 && d < bi) {
+      n = n * B + BigInt(d);
+      any = true;
+    } else if (!ignore) {
+      const shown = ch === ' ' ? '空白' : ch === '\n' ? '改行' : ch.toUpperCase();
+      if (!bad.includes(shown)) bad.push(shown);
+    }
+  }
+  if (bad.length) {
+    r.numErr = '基数 ' + bi + ' で使えない文字: ' + bad.join(' ');
+    return r;
+  }
+  if (any) {
+    const s = n.toString(bo);
+    r.out = upper ? s.toUpperCase() : s.toLowerCase();
+  }
+  return r;
+}
+
+const $ = (id) => document.getElementById(id);
+let upper = true;
+
+function render() {
+  const r = convert($('c-in').value, $('c-inbase').value, $('c-outbase').value, $('c-ignore').checked, upper);
+  $('c-out').value = r.out;
+  $('c-in-msg').textContent = r.numErr;
+  $('c-bar-msg').textContent = [r.inErr, r.outErr].filter(Boolean).join(' / ');
+  $('c-in').setAttribute('aria-invalid', String(!!r.numErr));
+  $('c-inbase').setAttribute('aria-invalid', String(!!r.inErr));
+  $('c-outbase').setAttribute('aria-invalid', String(!!r.outErr));
+}
+
+function step(id, d) {
+  const b = parseBase($(id).value);
+  $(id).value = String(Math.min(36, Math.max(2, (b === null ? 10 : b) + d)));
+  render();
+}
+$('c-inbase-dec').addEventListener('click', () => step('c-inbase', -1));
+$('c-inbase-inc').addEventListener('click', () => step('c-inbase', 1));
+$('c-outbase-dec').addEventListener('click', () => step('c-outbase', -1));
+$('c-outbase-inc').addEventListener('click', () => step('c-outbase', 1));
+
+function setUpper(v) {
+  upper = v;
+  $('c-lower').setAttribute('aria-pressed', String(!v));
+  $('c-upper').setAttribute('aria-pressed', String(v));
+  render();
+}
+
+$('c-in').addEventListener('input', render);
+$('c-inbase').addEventListener('input', render);
+$('c-outbase').addEventListener('input', render);
+$('c-ignore').addEventListener('change', render);
+$('c-lower').addEventListener('click', () => setUpper(false));
+$('c-upper').addEventListener('click', () => setUpper(true));
+$('c-swap').addEventListener('click', () => {
+  const out = $('c-out').value;
+  const ib = $('c-inbase').value;
+  $('c-in').value = out;
+  $('c-inbase').value = $('c-outbase').value;
+  $('c-outbase').value = ib;
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
