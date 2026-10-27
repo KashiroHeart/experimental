@@ -1,0 +1,61 @@
+# sandbox.yoshina.moe（デザイン試作サイト）を nginx から直接配信する例。
+#
+# yoshina.moe 系のサイト（yoshinamoego）と同じサーバーで動くが、こちらは静的ファイルだけ。
+# アプリのプロセスは持たず、nginx がドキュメントルートのファイルをそのまま返す。
+#
+# 配置（公開するのは次の 4 つだけ。deploy/ や .git は置かない）:
+#
+#   sudo install -d -m 0755 /var/www/sandbox.yoshina.moe
+#   sudo rsync -a --delete index.html about.html examples assets /var/www/sandbox.yoshina.moe/
+#
+# URL は拡張子なし。/examples/1 → examples/1.html、/about → about.html を返す。
+# .html 付きで来たら拡張子なしへ 301 で寄せる。
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name sandbox.yoshina.moe;
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name sandbox.yoshina.moe;
+
+    ssl_certificate     /etc/letsencrypt/live/sandbox.yoshina.moe/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/sandbox.yoshina.moe/privkey.pem;
+
+    root /var/www/sandbox.yoshina.moe;
+    charset utf-8;
+
+    # 受け取るものが無い。
+    client_max_body_size 1k;
+
+    # try_files で見つけたファイルはこの location のまま返る（内部リダイレクトしない）ので、
+    # 下の .html → 拡張子なしのリダイレクトとループしない。
+    location = / {
+        try_files /index.html =404;
+    }
+
+    location = /index.html {
+        return 301 /;
+    }
+
+    location ~ ^(/.+)\.html$ {
+        return 301 $1$is_args$args;
+    }
+
+    location / {
+        try_files $uri $uri.html =404;
+    }
+
+    location /assets/ {
+        try_files $uri =404;
+        expires 1h;
+    }
+}
