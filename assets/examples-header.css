@@ -1,0 +1,136 @@
+/*
+ * examples 共通ヘッダー。
+ * 各 example のデザインに干渉しないよう、クラス名と変数はすべて xh- 接頭辞にし、
+ * 固定配置で重ねるだけにする（body の余白やレイアウトには触らない）。
+ */
+:root {
+  --xh-bg: rgba(255, 255, 255, .62);
+  --xh-border: rgba(15, 23, 42, .10);
+  --xh-text: #17181c;
+  --xh-muted: #5b6070;
+  --xh-hover: rgba(15, 23, 42, .06);
+  --xh-accent: #4f46e5;
+  --xh-shadow: 0 8px 24px rgba(15, 23, 42, .08);
+  --xh-ease: cubic-bezier(.22, 1, .36, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --xh-bg: rgba(13, 14, 17, .58);
+    --xh-border: rgba(255, 255, 255, .10);
+    --xh-text: #e7e9ee;
+    --xh-muted: #9aa0b0;
+    --xh-hover: rgba(255, 255, 255, .08);
+    --xh-accent: #818cf8;
+    --xh-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+  }
+}
+:root[data-theme="dark"] {
+  --xh-bg: rgba(13, 14, 17, .58);
+  --xh-border: rgba(255, 255, 255, .10);
+  --xh-text: #e7e9ee;
+  --xh-muted: #9aa0b0;
+  --xh-hover: rgba(255, 255, 255, .08);
+  --xh-accent: #818cf8;
+  --xh-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+}
+
+.xh-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2147483000;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 48px;
+  padding: 0 20px;
+  box-sizing: border-box;
+  background: var(--xh-bg);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
+  border-bottom: 1px solid var(--xh-border);
+  box-shadow: var(--xh-shadow);
+  color: var(--xh-text);
+  font: 500 13px/1 Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  transform: translateY(calc(-100% - 2px));
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    transform .42s var(--xh-ease),
+    opacity .3s var(--xh-ease),
+    visibility 0s linear .42s;
+}
+.xh-bar.xh-show,
+.xh-bar:focus-within {
+  transform: none;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    transform .42s var(--xh-ease),
+    opacity .3s var(--xh-ease),
+    visibility 0s;
+}
+
+.xh-num {
+  font: 600 12px/1 "JetBrains Mono", ui-monospace, monospace;
+  color: var(--xh-muted);
+  letter-spacing: .02em;
+}
+.xh-nav {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+.xh-nav a {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+  transition: background .15s;
+}
+.xh-nav a:hover { background: var(--xh-hover); }
+.xh-nav a:focus-visible { outline: 2px solid var(--xh-accent); outline-offset: 1px; }
+
+/* タッチ端末向けの取っ手。hover できない環境でだけ出す。 */
+.xh-handle {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 50%;
+  z-index: 2147482999;
+  width: 56px;
+  height: 18px;
+  margin-left: -28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.xh-handle::before {
+  content: "";
+  display: block;
+  width: 36px;
+  height: 4px;
+  margin: 5px auto 0;
+  border-radius: 2px;
+  background: var(--xh-muted);
+  opacity: .45;
+}
+@media (hover: none) {
+  .xh-handle { display: block; }
+}
+
+@media (max-width: 480px) {
+  .xh-bar { padding: 0 16px; gap: 8px; }
+  .xh-nav a { padding: 0 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xh-bar,
+  .xh-bar.xh-show,
+  .xh-bar:focus-within { transition: none; }
+}
