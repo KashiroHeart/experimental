@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>#6 ヴィジュネル暗号 B 左右2カラム | sandbox</title>
+<link rel="stylesheet" href="/assets/examples-header.css">
+<script src="/assets/examples-header.js" defer></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+Hebrew:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light}
+body{margin:0;background:#fafafa;color:#1a1a1a;font-family:"Noto Sans JP","Noto Sans Hebrew",system-ui,-apple-system,"Hiragino Sans","Yu Gothic",sans-serif;font-size:16px;line-height:1.6}
+*,*::before,*::after{box-sizing:border-box}
+fieldset.fs{border:0;margin:0;padding:0;min-width:0}
+fieldset.fs>legend{padding:0;margin:0 0 8px;font-size:14px;font-weight:500}
+.lb{font-size:14px;font-weight:500}
+.tag{display:inline-block;border:1px solid #b5b5b5;border-radius:3px;padding:0 6px;font-size:12px;line-height:20px;color:#595959}
+.field{display:block;width:100%;margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Noto Sans JP","Noto Sans Hebrew",monospace;font-size:16px;line-height:1.6;letter-spacing:.04em;color:#1a1a1a;background:#fff;border:1px solid #8a8a8a;border-radius:4px;padding:10px 12px}
+textarea.field{resize:vertical}
+.field:hover{border-color:#2457c5}
+.field:focus{outline:2px solid #2457c5;outline-offset:1px;border-color:#2457c5}
+.field[readonly]{background:#f0f0f0;border-color:#b5b5b5}
+.field[readonly]:hover,.field[readonly]:focus{border-color:#b5b5b5}
+.field:invalid{border-color:#b3261e;background:#fdf1f0}
+.field:invalid:focus{outline-color:#b3261e}
+.fg{position:relative}
+.err{position:absolute;left:0;top:100%;margin:4px 0 0;font-size:13px;line-height:20px;color:#b3261e;visibility:hidden}
+.fg:has(.field:invalid) .err{visibility:visible}
+.btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;font:inherit;font-size:15px;font-weight:500;color:#1a1a1a;background:#fff;border:1px solid #8a8a8a;border-radius:4px;cursor:pointer}
+.btn:hover{color:#2457c5;border-color:#2457c5;background:#eef3fc}
+.btn:focus-visible{outline:2px solid #2457c5;outline-offset:2px}
+.chip{position:relative;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;font-size:15px;line-height:1.3;color:#1a1a1a;background:#fff;border:1px solid #8a8a8a;border-radius:4px;cursor:pointer;user-select:none}
+.chip input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.chip:hover{color:#2457c5;border-color:#2457c5;background:#eef3fc;z-index:1}
+.chip:has(input:checked){color:#fff;background:#1a1a1a;border-color:#1a1a1a;z-index:1}
+.chip:has(input:checked):hover{background:#2457c5;border-color:#2457c5}
+.chip:has(input:focus-visible){outline:2px solid #2457c5;outline-offset:2px;z-index:2}
+.seg{display:inline-flex}
+.seg .chip{border-radius:0;margin-left:-1px}
+.seg .chip:first-child{border-radius:4px 0 0 4px;margin-left:0}
+.seg .chip:last-child{border-radius:0 4px 4px 0}
+.sw{position:relative;display:inline-flex;align-items:center;gap:12px;min-height:44px;font-size:15px;cursor:pointer}
+.sw input{position:absolute;left:0;top:0;width:44px;height:44px;margin:0;opacity:0;cursor:pointer}
+.sw .trk{position:relative;flex:none;width:40px;height:24px;background:#fff;border:1px solid #8a8a8a;border-radius:12px}
+.sw .trk::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#8a8a8a}
+.sw:hover .trk{border-color:#2457c5}
+.sw:hover input:not(:checked)+.trk::after{background:#2457c5}
+.sw input:checked+.trk{background:#1a1a1a;border-color:#1a1a1a}
+.sw input:checked+.trk::after{left:19px;background:#fff}
+.sw:hover input:checked+.trk{background:#2457c5;border-color:#2457c5}
+.sw input:focus-visible+.trk{outline:2px solid #2457c5;outline-offset:2px}
+.sw .st{font-size:13px;color:#595959}
+.sw .st::before{content:"無効"}
+.sw input:checked~.st::before{content:"有効"}
+details.sample{border-top:1px solid #d4d4d4;border-bottom:1px solid #d4d4d4}
+details.sample>summary{display:flex;align-items:center;gap:12px;min-height:56px;padding:0 4px;font-size:15px;font-weight:500;list-style:none;cursor:pointer}
+details.sample>summary::-webkit-details-marker{display:none}
+details.sample>summary::before{content:"";flex:none;width:8px;height:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg)}
+details.sample[open]>summary::before{transform:rotate(45deg)}
+details.sample>summary:hover{color:#2457c5}
+details.sample>summary:focus-visible{outline:2px solid #2457c5;outline-offset:-2px}
+details.sample .cap{font-size:13px;font-weight:400;color:#595959}
+.tr{border-collapse:collapse;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px}
+.tr th,.tr td{width:40px;height:36px;padding:0;text-align:center;background:#fff;border:1px solid #d4d4d4}
+.tr th{background:#f0f0f0;font-weight:600}
+.tr td:hover{color:#2457c5;background:#eef3fc}
+.tr .dots{color:#595959}
+.tool:not(:has(input[name="tbl"][value="latin"]:checked)) .s-latin{display:none}
+.tool:not(:has(input[name="tbl"][value="goju"]:checked)) .s-goju{display:none}
+.tool:not(:has(input[name="tbl"][value="iroha"]:checked)) .s-iroha{display:none}
+.tool:not(:has(input[name="tbl"][value="cyr"]:checked)) .s-cyr{display:none}
+.tool:not(:has(input[name="tbl"][value="heb"]:checked)) .s-heb{display:none}
+</style>
+</head>
+<body>
+<div class="tool" style="display:flex;flex-direction:column">
+  <main style="width:100%;max-width:1120px;margin:0 auto;padding:48px 32px 64px;display:flex;flex-direction:column;gap:32px">
+    <div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 16px">
+      <h1 style="margin:0;font-size:28px;line-height:1.3;font-weight:700">ヴィジュネル暗号</h1>
+      <p style="margin:0;font-size:14px;color:#595959">Vigenère cipher</p>
+    </div>
+
+    <section style="display:flex;flex-direction:column;gap:24px;padding:24px;background:#fff;border:1px solid #d4d4d4;border-radius:8px">
+      <fieldset class="fs">
+        <legend>表配列</legend>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <label class="chip"><input type="radio" name="tbl" value="latin" checked><span>ラテン文字</span></label>
+          <label class="chip"><input type="radio" name="tbl" value="goju"><span>五十音</span></label>
+          <label class="chip"><input type="radio" name="tbl" value="iroha"><span>いろは</span></label>
+          <label class="chip"><input type="radio" name="tbl" value="cyr"><span>キリル文字</span></label>
+          <label class="chip"><input type="radio" name="tbl" value="heb"><span>ヘブライ文字</span></label>
+        </div>
+      </fieldset>
+
+      <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:24px 56px">
+        <fieldset class="fs">
+          <legend>表配列の設定</legend>
+          <div class="s-latin">
+            <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px">
+              <span style="font-size:15px">出力形式</span>
+              <div class="seg">
+                <label class="chip"><input type="radio" name="case" value="lower"><span>小文字</span></label>
+                <label class="chip"><input type="radio" name="case" value="upper" checked><span>大文字</span></label>
+              </div>
+            </div>
+          </div>
+          <div class="s-goju"><p style="margin:0;min-height:44px;display:flex;align-items:center;font-size:14px;color:#595959">追加の設定はありません。</p></div>
+          <div class="s-iroha">
+            <label class="sw"><input type="checkbox" id="opt-n"><span class="trk"></span><span>配列に「ん」を含める</span><span class="st"></span></label>
+          </div>
+          <div class="s-cyr">
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <label class="sw"><input type="checkbox" id="opt-yo"><span class="trk"></span><span>配列にёを含める</span><span class="st"></span></label>
+              <p style="margin:0;font-size:13px;color:#595959">無効のとき、入力の ё は е に正規化されます。</p>
+            </div>
+          </div>
+          <div class="s-heb"><p style="margin:0;min-height:44px;display:flex;align-items:center;font-size:14px;color:#595959">追加の設定はありません。</p></div>
+        </fieldset>
+
+        <fieldset class="fs">
+          <legend>表にない文字</legend>
+          <div class="seg">
+            <label class="chip"><input type="radio" name="miss" value="pass" checked><span>素通し</span></label>
+            <label class="chip"><input type="radio" name="miss" value="drop"><span>除去</span></label>
+          </div>
+        </fieldset>
+      </div>
+    </section>
+
+    <div class="fg" style="display:flex;flex-direction:column;gap:8px">
+      <label for="key" class="lb">鍵</label>
+      <input id="key" class="field" dir="auto" type="text" value="LEMON" autocomplete="off" spellcheck="false" aria-describedby="key-err">
+      <p id="key-err" class="err">鍵に、表にない文字が含まれています。</p>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:16px">
+      <div style="flex:1 1 360px;min-width:0;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <label for="src" class="lb">文字列 (変換前)</label>
+          <span class="tag" id="src-tag">平文</span>
+        </div>
+        <textarea id="src" class="field" dir="auto" style="height:240px;resize:none" spellcheck="false">ATTACK AT DAWN</textarea>
+      </div>
+
+      <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:8px">
+        <button type="button" id="swap" class="btn" style="flex-direction:column;gap:4px;padding:8px 14px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M20 7l-3-3"></path><path d="M20 7l-3 3"></path><path d="M20 17H4"></path><path d="M4 17l3-3"></path><path d="M4 17l3 3"></path></svg>
+          <span style="font-size:13px">入れ替え</span>
+        </button>
+      </div>
+
+      <div style="flex:1 1 360px;min-width:0;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <label for="dst" class="lb">文字列 (変換後)</label>
+          <span class="tag" id="dst-tag">暗号文</span>
+        </div>
+        <textarea id="dst" class="field" dir="auto" style="height:240px;resize:none" readonly>LXFOPV EF RNHR</textarea>
+      </div>
+    </div>
+
+    <details class="sample">
+      <summary>
+        <span>表見本</span>
+        <span class="cap"><span class="s-latin">ラテン文字</span><span class="s-goju">五十音</span><span class="s-iroha">いろは</span><span class="s-cyr">キリル文字</span><span class="s-heb">ヘブライ文字</span></span>
+      </summary>
+      <div style="padding:8px 4px 24px;overflow-x:auto">
+        <table class="tr" id="sample"></table>
+      </div>
+    </details>
+  </main>
+</div>
+<script>
+const GOJU = 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん';
+const IROHA = 'いろはにほへとちりぬるをわかよたれそつねならむうゐのおくやまけふこえてあさきゆめみしゑひもせす';
+const CYR = 'АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ';
+const HEB = 'אבגדהוזחטיכלמנסעפצקרשת';
+const SMALL_KANA = { 'ぁ': 'あ', 'ぃ': 'い', 'ぅ': 'う', 'ぇ': 'え', 'ぉ': 'お', 'っ': 'つ', 'ゃ': 'や', 'ゅ': 'ゆ', 'ょ': 'よ', 'ゎ': 'わ', 'ゕ': 'か', 'ゖ': 'け' };
+const HEB_FINAL = { 'ך': 'כ', 'ם': 'מ', 'ן': 'נ', 'ף': 'פ', 'ץ': 'צ' };
+
+// 表配列と、1 文字を表の位置に引く関数を作る
+function makeTable(tbl, opt) {
+  let chars;
+  let fold = (c) => c;
+  let cased = false;
+  if (tbl === 'latin') {
+    chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    fold = (c) => c.toUpperCase();
+    cased = true;
+  } else if (tbl === 'goju' || tbl === 'iroha') {
+    chars = tbl === 'goju' ? GOJU : IROHA + (opt.n ? 'ん' : '');
+    fold = (c) => {
+      const cp = c.codePointAt(0);
+      if (cp >= 0x30a1 && cp <= 0x30f6) c = String.fromCodePoint(cp - 0x60); // カタカナ → ひらがな
+      return SMALL_KANA[c] || c;
+    };
+  } else if (tbl === 'cyr') {
+    chars = opt.yo ? CYR.replace('Е', 'ЕЁ') : CYR;
+    fold = (c) => {
+      c = c.toUpperCase();
+      return !opt.yo && c === 'Ё' ? 'Е' : c;
+    };
+    cased = true;
+  } else {
+    chars = HEB;
+    fold = (c) => HEB_FINAL[c] || c;
+  }
+  chars = [...chars];
+  const index = new Map(chars.map((c, i) => [c, i]));
+  const look = (c) => {
+    const i = index.get(fold(c));
+    return i === undefined ? null : { i, upper: cased && c !== c.toLowerCase() };
+  };
+  return { tbl, chars, look };
+}
+
+// 基底文字＋結合文字のまとまりを 1 単位として表に引く。
+// 合成済みの 1 文字（й、ё など）で引けなければ、基底文字だけで引いて結合文字（濁点など）は付けたまま返す
+function lookCluster(t, cl) {
+  const c = cl.normalize('NFC');
+  if ([...c].length === 1) {
+    const hit = t.look(c);
+    if (hit) return { ...hit, marks: '' };
+  }
+  const base = String.fromCodePoint(cl.codePointAt(0));
+  const hit = t.look(base);
+  return hit ? { ...hit, marks: cl.slice(base.length) } : null;
+}
+
+function clusters(s) {
+  return s.normalize('NFD').match(/\P{M}\p{M}*|\p{M}+/gu) || [];
+}
+
+function vigenere(text, key, t, o) {
+  const r = { out: '', keyErr: false };
+  const k = [];
+  for (const cl of clusters(key)) {
+    if (/^\s$/.test(cl)) continue;
+    const hit = lookCluster(t, cl);
+    if (!hit) {
+      r.keyErr = true;
+      return r;
+    }
+    k.push(hit.i);
+  }
+  if (!k.length) return r;
+
+  const n = t.chars.length;
+  let j = 0;
+  let out = '';
+  for (const cl of clusters(text)) {
+    const hit = lookCluster(t, cl);
+    if (!hit) {
+      if (!o.drop) out += cl;
+      continue;
+    }
+    const s = k[j++ % k.length];
+    let ch = t.chars[(hit.i + (o.decrypt ? n - s : s)) % n];
+    if (t.tbl === 'latin') ch = o.lower ? ch.toLowerCase() : ch;
+    else if (t.tbl === 'cyr' && !hit.upper) ch = ch.toLowerCase();
+    out += ch + hit.marks;
+  }
+  r.out = out.normalize('NFC');
+  return r;
+}
+
+const $ = (id) => document.getElementById(id);
+const checked = (name) => document.querySelector('input[name="' + name + '"]:checked').value;
+let decrypt = false;
+
+function options() {
+  return {
+    tbl: checked('tbl'),
+    n: $('opt-n').checked,
+    yo: $('opt-yo').checked,
+    lower: checked('case') === 'lower',
+    drop: checked('miss') === 'drop',
+    decrypt,
+  };
+}
+
+// 表見本: 先頭 5 行 × 5 列、⋯、最終行 / 列
+function renderSample(t, lower) {
+  const n = t.chars.length;
+  const ch = (i) => (lower ? t.chars[i % n].toLowerCase() : t.chars[i % n]);
+  const pick = [0, 1, 2, 3, 4, -1, n - 1];
+  const cell = (tag, text, attrs) => '<' + tag + (attrs || '') + (text === '⋯' ? ' class="dots"' : '') + '>' + text + '</' + tag + '>';
+  let head = cell('th', '', ' scope="col"');
+  for (const c of pick) head += cell('th', c < 0 ? '⋯' : ch(c), ' scope="col"');
+  let body = '';
+  for (const r of pick) {
+    let row = cell('th', r < 0 ? '⋯' : ch(r), ' scope="row"');
+    for (const c of pick) row += cell('td', r < 0 || c < 0 ? '⋯' : ch(r + c));
+    body += '<tr>' + row + '</tr>';
+  }
+  $('sample').innerHTML = '<thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody>';
+}
+
+function render() {
+  const o = options();
+  const t = makeTable(o.tbl, o);
+  const r = vigenere($('src').value, $('key').value, t, o);
+  $('dst').value = r.out;
+  $('key').setCustomValidity(r.keyErr ? '鍵に、表にない文字が含まれています。' : '');
+  $('key').setAttribute('aria-invalid', String(r.keyErr));
+
+  const from = decrypt ? '暗号文' : '平文';
+  const to = decrypt ? '平文' : '暗号文';
+  $('src-tag').textContent = from;
+  $('dst-tag').textContent = to;
+  if ($('dir-from')) {
+    $('dir-from').textContent = from;
+    $('dir-to').textContent = to;
+    $('dir-mode').textContent = decrypt ? '(復号)' : '(暗号化)';
+  }
+  renderSample(t, o.tbl === 'latin' && o.lower);
+}
+
+$('src').addEventListener('input', render);
+$('key').addEventListener('input', render);
+document.addEventListener('change', (e) => {
+  if (e.target.matches('input[type="radio"], input[type="checkbox"]')) render();
+});
+$('swap').addEventListener('click', () => {
+  $('src').value = $('dst').value;
+  decrypt = !decrypt;
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
