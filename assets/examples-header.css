@@ -76,11 +76,11 @@
   font: 600 12px/1 "JetBrains Mono", ui-monospace, monospace;
   color: var(--xh-muted);
   letter-spacing: .02em;
+  margin-left: auto;
 }
 .xh-nav {
   display: flex;
   gap: 4px;
-  margin-left: auto;
 }
 .xh-nav a {
   display: inline-flex;

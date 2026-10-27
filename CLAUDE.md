@@ -37,7 +37,7 @@ yoshina.moe 系のサイト（`KashiroHeart/yoshinamoego`）と同じサーバ�
 2. `index.html` の `<ul class="examples">` の末尾に 1 行足す
 
    ```html
-   <li><a href="/examples/<N>"><span class="num">#<N></span><タイトル><span class="arrow" aria-hidden="true">→</span></a></li>
+   <li><a href="/examples/<N>" target="_blank"><span class="num">#<N></span><タイトル><span class="arrow" aria-hidden="true">→</span></a></li>
    ```
 
 共通ヘッダーは固定配置で重ねるだけで、ページのレイアウトには触らない。
