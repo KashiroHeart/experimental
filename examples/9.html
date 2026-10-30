@@ -1,0 +1,1913 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>#9 カラーピッカー | sandbox</title>
+<link rel="stylesheet" href="/assets/examples-header.css">
+<script src="/assets/examples-header.js" defer></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=BIZ+UDGothic:wght@400;700&display=swap" rel="stylesheet">
+<!--
+  カラーピッカー（旧 tools.yoshina.moe/tools/colorpicker/ のメイン領域を移したもの）。
+  左に画像（スポイト・頻出色）、右に色のパネル（現在色と HSV・パレット・画像への合成）。
+  画像はブラウザの中だけで扱い、サーバーへは送らない。計算も全部このページの script の中。
+-->
+<style>
+/* ============ トークン（ツール置き場のテーマ 1 の値。OS 設定がダークならテーマ 3 の値） ============ */
+:root {
+  color-scheme: light;
+
+  --bg: #f8f3f2;
+  --surface: #fffcfb;
+  --surface-sunken: #f3ebe9;
+  --surface-hover: #f2e8e5;
+  --line: #ebdfdc;
+  --line-control: #8e807c;
+
+  --ink: #2a2120;
+  --ink-2: #5d4f4c;
+  --ink-3: #736360;
+
+  --coral: #f0897d;
+  --coral-hover: #e5796c;
+  --coral-ink: #ad4538;
+  --coral-soft: #fbe7e3;
+
+  --amber: #ffb26b;
+  --amber-ink: #8f5210;
+  --amber-soft: #fff0e0;
+
+  --teal: #8a84d6;
+  --teal-ink: #4a43a8;
+  --teal-soft: #e8e7f6;
+
+  --danger-ink: #b3261e;
+  --on-accent: #2b1410;
+  --focus: var(--coral-ink);
+
+  --shadow-pop: 0 8px 24px rgba(42, 33, 32, 0.12);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --sidebar: 340px;
+  --content-max: 1200px;
+
+  --radius-0: 0px;
+  --radius-control: 4px;
+  --radius-check: 2px;
+  --radius-card: 8px;
+
+  --duration-fast: 0.12s;
+  --duration-base: 0.2s;
+  --duration-slow: 0.3s;
+
+  /* HackGen Console がローカルに入っていればそれを、無ければ Google Fonts の Zen Kaku Gothic New / BIZ UDGothic を使う。 */
+  --font-sans: "HackGen Console NF", "HackGen Console", "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  --font-mono: "HackGen Console NF", "HackGen Console", "BIZ UDGothic", ui-monospace, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #171514;
+    --surface: #1f1c1a;
+    --surface-sunken: #100f0e;
+    --surface-hover: #2a2623;
+    --line: #36312d;
+    --line-control: #7d746c;
+    --ink: #f2ede8;
+    --ink-2: #c4bbb2;
+    --ink-3: #9e958c;
+    --coral-hover: #ffa04a;
+    --coral-ink: #ffa24d;
+    --coral-soft: #43260f;
+    --amber-ink: #ffb26b;
+    --amber-soft: #3a2b1c;
+    --teal-ink: #ff6f61;
+    --teal-soft: #441a17;
+    --danger-ink: #ff9c8f;
+    --coral: #ff8a1f;
+    --teal: #ff3b3b;
+    --on-accent: #241000;
+    --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.55);
+  }
+}
+
+html { height: 100%; }
+
+/* ============ 部品（yt-*） ============ */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 26px;
+  -webkit-font-smoothing: antialiased;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-control) transparent;
+}
+
+h1, h2, h3, h4, p, ul, ol, figure, fieldset, legend {
+  margin: 0;
+  padding: 0;
+}
+
+ul, ol { list-style: none; }
+
+::selection { background: var(--coral-soft); color: var(--ink); }
+
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+[hidden] { display: none !important; }
+
+input, textarea, select, button {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  margin: 0;
+}
+
+button { cursor: pointer; }
+
+.yt-icon { display: block; flex: 0 0 auto; }
+
+/* ---------- 共通：フォーム部品は動かさない ---------- */
+.yt-btn, .yt-iconbtn, .yt-input, .yt-select,
+.yt-check__box, .yt-radio__box { transition: none; animation: none; }
+
+/* ---------- Button ---------- */
+.yt-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  height: 36px; padding: 0 var(--space-4);
+  border: 1px solid var(--line-control); border-radius: var(--radius-control);
+  background: var(--surface); color: var(--ink);
+  font: 500 13px/20px var(--font-sans); cursor: pointer; white-space: nowrap;
+}
+.yt-btn:hover { background: var(--surface-hover); }
+.yt-btn--ghost { background: transparent; border-color: transparent; color: var(--ink-2); }
+/* 背景を出さず、文字色の明度だけで hover を示す。 */
+.yt-btn--ghost:hover { background: transparent; color: var(--ink); }
+.yt-btn--sm { height: 28px; padding: 0 var(--space-2); gap: var(--space-1); font-size: 12px; }
+.yt-btn:disabled, .yt-btn[aria-disabled="true"] { background: var(--surface-sunken); border-color: var(--line); color: var(--ink-3); cursor: not-allowed; }
+.yt-btn--ghost:disabled, .yt-btn--ghost[aria-disabled="true"] { background: transparent; border-color: transparent; }
+
+/* ---------- IconButton ---------- */
+.yt-iconbtn {
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  width: 32px; height: 32px; padding: 0;
+  border: 1px solid transparent; border-radius: var(--radius-control);
+  background: transparent; color: var(--ink-2); cursor: pointer;
+}
+/* 通常は目立たない色（ゴーストボタンと同じ --ink-2）。hover は背景を出さず明度で示す。 */
+.yt-iconbtn:hover { color: var(--ink); }
+.yt-iconbtn--sm { width: 28px; height: 28px; }
+.yt-iconbtn:disabled { color: var(--ink-3); background: transparent; cursor: not-allowed; }
+
+/* ---------- Field ---------- */
+.yt-label { display: block; margin-bottom: var(--space-2); font: 500 13px/20px var(--font-sans); color: var(--ink-2); }
+.yt-input, .yt-select {
+  width: 100%; margin: 0;
+  background: var(--surface); color: var(--ink);
+  border: 1px solid var(--line-control); border-radius: var(--radius-control);
+  font: 400 14px/22px var(--font-sans);
+}
+.yt-input, .yt-select { height: 36px; padding: 0 var(--space-3); }
+.yt-input--data { font-family: var(--font-mono); }
+.yt-select {
+  appearance: none; padding-right: 36px; cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 17px) 16px, calc(100% - 12px) 16px;
+  background-size: 5px 5px; background-repeat: no-repeat;
+}
+.yt-input::placeholder { color: var(--ink-3); }
+.yt-input:focus, .yt-select:focus { outline: 2px solid var(--focus); outline-offset: -1px; border-color: var(--focus); }
+.yt-input:disabled, .yt-select:disabled { background: var(--surface-sunken); border-color: var(--line); color: var(--ink-3); cursor: not-allowed; }
+.yt-field { display: flex; flex-direction: column; min-width: 0; }
+.yt-field .yt-label { margin-bottom: var(--space-1); }
+
+/* ---------- Checkbox ---------- */
+.yt-check { position: relative; display: inline-flex; align-items: flex-start; gap: var(--space-2); cursor: pointer; font: 400 13px/20px var(--font-sans); color: var(--ink); }
+.yt-check input { position: absolute; width: 1px; height: 1px; opacity: 0; margin: 0; }
+.yt-check__box {
+  flex: 0 0 auto; width: 16px; height: 16px; margin-top: 2px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line-control); border-radius: var(--radius-check); background: var(--surface); color: transparent;
+}
+.yt-check input:checked + .yt-check__box { background: var(--coral); border-color: var(--coral); color: var(--on-accent); }
+.yt-check input:focus-visible + .yt-check__box { outline: 2px solid var(--focus); outline-offset: 2px; }
+.yt-check input:disabled + .yt-check__box { background: var(--surface-sunken); border-color: var(--line); }
+.yt-check input:disabled ~ span:last-child { color: var(--ink-3); }
+
+/* ---------- Radio（チェックボックスの枠＋一回り小さい塗り四角） ---------- */
+.yt-radio { position: relative; display: inline-flex; align-items: flex-start; gap: var(--space-2); cursor: pointer; font: 400 13px/20px var(--font-sans); color: var(--ink); }
+.yt-radio input { position: absolute; width: 1px; height: 1px; opacity: 0; margin: 0; }
+.yt-radio__box {
+  flex: 0 0 auto; width: 16px; height: 16px; margin-top: 2px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line-control); border-radius: var(--radius-check); background: var(--surface);
+}
+.yt-radio__box::after { content: ""; width: 8px; height: 8px; border-radius: 1px; background: transparent; }
+.yt-radio input:checked + .yt-radio__box { border-color: var(--coral); }
+.yt-radio input:checked + .yt-radio__box::after { background: var(--coral); }
+.yt-radio input:focus-visible + .yt-radio__box { outline: 2px solid var(--focus); outline-offset: 2px; }
+.yt-radio input:disabled + .yt-radio__box { background: var(--surface-sunken); border-color: var(--line); }
+.yt-radio input:disabled:checked + .yt-radio__box::after { background: var(--ink-3); }
+
+/* ---------- Message ---------- */
+.yt-msg { display: flex; align-items: flex-start; gap: var(--space-2); margin: 0; font: 400 13px/20px var(--font-sans); color: var(--ink-2); }
+.yt-msg .yt-icon { margin-top: 2px; }
+.yt-msg:empty { display: none; }
+.yt-msg--info { color: var(--teal-ink); }
+.yt-msg--warn { color: var(--amber-ink); }
+.yt-msg--error { color: var(--danger-ink); }
+
+/* JS が文言だけを入れる器。空なら畳み、文言が入ったらアイコンを前に出す。 */
+.yt-msg[data-icon-warn]:not(:empty)::before,
+.yt-msg[data-icon-error]:not(:empty)::before,
+.yt-msg[data-icon-info]:not(:empty)::before {
+  content: ""; flex: 0 0 auto; width: 16px; height: 16px; margin-top: 2px;
+  background: currentColor;
+  -webkit-mask: var(--yt-msg-icon) center / 16px 16px no-repeat;
+  mask: var(--yt-msg-icon) center / 16px 16px no-repeat;
+}
+.yt-msg[data-icon-warn] { --yt-msg-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4.5l8.5 15h-17z'/%3E%3Cpath d='M12 10.5v4M12 17.25v.01'/%3E%3C/svg%3E"); }
+.yt-msg[data-icon-error] { --yt-msg-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='8.5'/%3E%3Cpath d='M12 7.75v5M12 16.25v.01'/%3E%3C/svg%3E"); }
+.yt-msg[data-icon-info] { --yt-msg-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='8.5'/%3E%3Cpath d='M12 11v5.25M12 7.75v.01'/%3E%3C/svg%3E"); }
+
+/* ---------- 入出力欄の見出し行 ---------- */
+
+.yt-io__head { display: flex; align-items: center; gap: var(--space-2); min-height: 36px; flex: 0 0 auto; }
+
+.yt-io__label { font: 500 13px/20px var(--font-sans); color: var(--teal-ink); white-space: nowrap; }
+
+.yt-io__count { font: 400 12px/18px var(--font-mono); color: var(--teal-ink); white-space: nowrap; }
+.yt-io__actions { margin-left: auto; display: flex; align-items: center; gap: 2px; }
+
+/* ---------- Panel（設定カラム） ---------- */
+.yt-panel { display: flex; flex-direction: column; min-height: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); overflow: hidden; }
+.yt-panel__body { flex: 1 1 auto; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
+.yt-panel__sec { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
+.yt-panel__sec + .yt-panel__sec { border-top: 1px solid var(--line); }
+.yt-panel__title { margin: 0; font: 700 14px/22px var(--font-sans); color: var(--ink); }
+
+.yt-panel__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+
+body { min-height: 100vh; background-color: var(--bg); }
+
+@media (max-width: 640px) {
+  .yt-btn, .yt-input, .yt-select { height: 44px; font-size: 16px; }
+  .yt-iconbtn { width: 44px; height: 44px; }
+  .yt-check { min-height: 44px; align-items: center; font-size: 15px; }
+  .yt-check__box { width: 22px; height: 22px; margin-top: 0; }
+  .yt-radio { min-height: 44px; align-items: center; font-size: 15px; }
+  .yt-radio__box { width: 22px; height: 22px; margin-top: 0; }
+  .yt-radio__box::after { width: 12px; height: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0s !important; transition-delay: 0s !important; animation-duration: 0s !important; }
+}
+
+/* ============ カラーピッカー ============ */
+/* カラーピッカーに固有の見た目。部品（yt-*）は上の節。
+   PC は左に画像、右に色のパネル（Panel を節で区切る）。SP は縦積み。 */
+
+.cp-noscript {
+  padding: var(--space-4) var(--space-6);
+}
+
+.cp-main {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  align-items: start;
+  gap: var(--space-5);
+  padding: var(--space-5) var(--space-6);
+}
+
+.cp-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.cp-col--color {
+  gap: 0;
+}
+
+.cp-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* ---- 画像 ---- */
+
+.cp-drop {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+  max-height: 62vh;
+  background: var(--surface);
+  border: 1px dashed var(--line-control);
+  border-radius: 0;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color var(--duration-fast) ease-out, background-color var(--duration-fast) ease-out;
+}
+
+.cp-drop:hover,
+.cp-drop.is-over {
+  border-color: var(--coral-ink);
+  background: var(--surface-hover);
+}
+
+.cp-drop.has-image {
+  border-style: solid;
+  border-color: var(--line);
+  background: var(--surface-sunken);
+  cursor: crosshair;
+}
+
+/* input は見えなくするが label のクリックで開くようにする。 */
+.cp-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.cp-drop:has(.cp-file:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.cp-canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 62vh;
+  object-fit: contain;
+  cursor: crosshair;
+  touch-action: none;
+  /* 透明部分が見えるように市松模様を敷く。 */
+  background-color: #8c847d;
+  background-image:
+    linear-gradient(45deg, #bdb5ad 25%, transparent 25%, transparent 75%, #bdb5ad 75%),
+    linear-gradient(45deg, #bdb5ad 25%, transparent 25%, transparent 75%, #bdb5ad 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 8px 8px;
+}
+
+.cp-drop__hint {
+  font: 400 13px/22px var(--font-sans);
+  color: var(--ink-2);
+  padding: var(--space-3);
+  text-align: center;
+}
+
+.cp-drop.has-image .cp-drop__hint {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  font-size: 12px;
+  line-height: 18px;
+  padding: var(--space-1) var(--space-2);
+  background: var(--surface);
+  color: var(--ink-2);
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+
+.cp-sample {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-2) 0 var(--space-3);
+}
+
+.cp-sample__label {
+  margin: 0;
+}
+
+.cp-hover {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font: 400 13px/20px var(--font-mono);
+  color: var(--ink);
+  visibility: hidden;
+}
+
+.cp-hover.is-on {
+  visibility: visible;
+}
+
+.cp-hover__sw {
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--line-control);
+}
+
+/* ---- チップ（頻出色・パレット） ---- */
+
+.cp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  min-height: 36px;
+}
+
+.cp-chips__empty {
+  font: 400 13px/22px var(--font-sans);
+  color: var(--ink-3);
+}
+
+.cp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 400 12px/18px var(--font-mono);
+  color: var(--ink);
+}
+
+/* 色見本はフォーム部品扱い（押すと現在色になる）。動かさない。 */
+.cp-chip__sw {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line-control);
+  border-radius: var(--radius-control);
+  padding: 0;
+  transition: none;
+}
+
+.cp-chip__sw:hover {
+  border-color: var(--ink);
+}
+
+.cp-chip__ratio {
+  color: var(--teal-ink);
+}
+
+.cp-chip__name {
+  width: 10em;
+  height: 28px;
+  padding: 0 var(--space-2);
+  font: 400 12px/18px var(--font-sans);
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line-control);
+  border-radius: var(--radius-control);
+}
+
+.cp-chip__name:focus {
+  outline: 2px solid var(--focus);
+  outline-offset: -1px;
+  border-color: var(--focus);
+}
+
+.cp-chip__name::placeholder {
+  color: var(--ink-3);
+}
+
+.cp-chip__x:hover {
+  color: var(--danger-ink);
+}
+
+/* ---- 現在色 ---- */
+
+.cp-current {
+  display: flex;
+  gap: var(--space-4);
+  align-items: stretch;
+}
+
+.cp-current__sw {
+  flex: 0 0 auto;
+  width: 84px;
+  height: 84px;
+  border: 1px solid var(--line-control);
+  border-radius: 0;
+  padding: 0;
+  transition: none;
+}
+
+.cp-current__sw:hover {
+  border-color: var(--ink);
+}
+
+.cp-current__values {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-1);
+  min-width: 0;
+  font: 400 13px/20px var(--font-mono);
+  color: var(--ink-2);
+}
+
+.cp-current__hex {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font: 500 13px/20px var(--font-sans);
+  color: var(--ink-2);
+}
+
+.cp-current__hex .yt-input {
+  width: 110px;
+}
+
+input.is-invalid {
+  border-color: var(--danger-ink);
+}
+
+.cp-hsv {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.cp-hsv__row {
+  display: grid;
+  grid-template-columns: 1.4em minmax(0, 1fr) 3.6em;
+  align-items: center;
+  gap: var(--space-3);
+  font: 500 13px/20px var(--font-mono);
+  color: var(--ink-2);
+}
+
+.cp-hsv__row output,
+.cp-blend-opacity__row output {
+  font: 400 13px/20px var(--font-mono);
+  text-align: right;
+  color: var(--teal-ink);
+}
+
+/* スライダーは背景を JS で色相・彩度・明度の帯にするので、つまみだけ描く。 */
+.cp-hsv__row input[type="range"],
+.cp-blend-opacity__row input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 14px;
+  margin: 0;
+  background: var(--surface-sunken);
+  border: 1px solid var(--line-control);
+  border-radius: 0;
+  outline: none;
+}
+
+.cp-hsv__row input[type="range"]::-webkit-slider-thumb,
+.cp-blend-opacity__row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 22px;
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.cp-hsv__row input[type="range"]::-moz-range-thumb,
+.cp-blend-opacity__row input[type="range"]::-moz-range-thumb {
+  width: 10px;
+  height: 22px;
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.cp-hsv__row input[type="range"]:focus-visible,
+.cp-blend-opacity__row input[type="range"]:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ---- 合成 ---- */
+
+.cp-blend-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3) var(--space-4);
+}
+
+.cp-blend-controls .yt-field:first-child {
+  width: 160px;
+}
+
+.cp-blend-opacity {
+  flex: 1 1 160px;
+}
+
+.cp-blend-opacity__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 3.6em;
+  align-items: center;
+  gap: var(--space-3);
+  height: 36px;
+}
+
+.cp-blend-opacity__row input[type="range"] {
+  background: linear-gradient(to right, var(--surface-sunken), var(--ink-3));
+}
+
+.cp-blend-dir {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+}
+
+.cp-slots {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.cp-slot {
+  display: grid;
+  grid-template-columns: 36px 4.5em minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+  font: 500 13px/20px var(--font-sans);
+  color: var(--ink-2);
+}
+
+.cp-slot__sw {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line-control);
+  border-radius: var(--radius-control);
+  padding: 0;
+  transition: none;
+}
+
+.cp-slot__sw:hover {
+  border-color: var(--ink);
+}
+
+/* ============ SP 版（幅 640px 以下） ============ */
+
+@media (max-width: 640px) {
+  .cp-noscript {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .cp-main {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .cp-col--color {
+    width: 100%;
+  }
+
+  .cp-drop {
+    min-height: 180px;
+    max-height: 50vh;
+  }
+
+  .cp-canvas {
+    max-height: 50vh;
+  }
+
+  .cp-hover {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .cp-current__sw {
+    width: 72px;
+    height: 72px;
+  }
+
+  .cp-chip__sw {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* パレットのチップは 1 行に 1 つ。名前欄を幅いっぱいに。 */
+  #cp_palette .cp-chip {
+    width: 100%;
+  }
+
+  #cp_palette .cp-chip__name {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    height: 44px;
+    font-size: 16px;
+  }
+
+  .cp-slot {
+    grid-template-columns: 36px 4.5em minmax(0, 1fr);
+  }
+
+  .cp-slot__take {
+    grid-column: 2 / -1;
+    justify-self: start;
+  }
+
+  .cp-hsv__row input[type="range"],
+  .cp-blend-opacity__row input[type="range"] {
+    height: 22px;
+  }
+
+  .cp-blend-opacity__row {
+    height: 44px;
+  }
+
+  .cp-hsv__row input[type="range"]::-webkit-slider-thumb,
+  .cp-blend-opacity__row input[type="range"]::-webkit-slider-thumb {
+    width: 16px;
+    height: 32px;
+  }
+
+  .cp-hsv__row input[type="range"]::-moz-range-thumb,
+  .cp-blend-opacity__row input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 32px;
+  }
+}
+
+/* ---- 見た目を翻訳型のツールにそろえる（配置は変えない）：画像の欄はカード、色見本は小さな角丸 ---- */
+.cp-drop {
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+</style>
+</head>
+<body>
+<noscript>
+    <p class="yt-msg yt-msg--error cp-noscript">JavaScript が無効なので使えません</p>
+</noscript>
+
+<main class="cp-main" id="cp_main">
+    <div class="cp-col cp-col--image">
+        <div class="yt-io__head">
+            <span class="yt-io__label">画像</span>
+            <span class="yt-io__count" id="cp_image_info"></span>
+            <span class="yt-io__actions">
+                <button type="button" id="cp_remove" class="yt-iconbtn" aria-label="画像を除去" title="除去" hidden><svg class="yt-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+            </span>
+        </div>
+        <label class="cp-drop" id="cp_drop">
+            <input type="file" id="cp_file" class="cp-file" accept="image/*">
+            <canvas id="cp_canvas" class="cp-canvas" hidden></canvas>
+            <span class="cp-drop__hint" id="cp_drop_hint">画像を選択</span>
+        </label>
+        <p class="yt-msg yt-msg--info" data-icon-info>アップロードした画像がサーバーに送信されることはありません。</p>
+
+        <div class="cp-sample" role="radiogroup" aria-label="サンプル範囲">
+            <span class="yt-label cp-sample__label">サンプル範囲</span>
+            <label class="yt-radio">
+                <input type="radio" name="cp_sample" value="1" checked>
+                <span class="yt-radio__box"></span>
+                <span>1px</span>
+            </label>
+            <label class="yt-radio">
+                <input type="radio" name="cp_sample" value="3">
+                <span class="yt-radio__box"></span>
+                <span>3×3</span>
+            </label>
+            <label class="yt-radio">
+                <input type="radio" name="cp_sample" value="5">
+                <span class="yt-radio__box"></span>
+                <span>5×5</span>
+            </label>
+            <span class="cp-hover" id="cp_hover" aria-live="off">
+                <span class="cp-hover__sw" id="cp_hover_sw"></span>
+                <span class="cp-hover__hex" id="cp_hover_hex"></span>
+            </span>
+        </div>
+
+        <div class="yt-io__head">
+            <span class="yt-io__label">頻出色</span>
+        </div>
+        <div id="cp_frequent" class="cp-chips" role="group" aria-label="頻出色"></div>
+    </div>
+
+    <div class="cp-col cp-col--color yt-panel">
+        <section class="yt-panel__sec">
+            <div class="yt-panel__head">
+                <h3 class="yt-panel__title">現在色</h3>
+                <span class="cp-actions">
+                    <button type="button" id="cp_hold" class="yt-btn yt-btn--sm yt-btn--ghost"><svg class="yt-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="yt-btn__text">パレットに追加</span></button>
+                    <button type="button" id="cp_copy" class="yt-iconbtn yt-iconbtn--sm" aria-label="HEX をコピー" title="コピー"><svg class="yt-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="8.5" y="8.5" width="11" height="11" rx="1.5"/><path d="M15.5 8.5V6A1.5 1.5 0 0 0 14 4.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/></svg></button>
+                </span>
+            </div>
+            <div class="cp-current">
+                <button type="button" id="cp_current_sw" class="cp-current__sw" title="パレットに追加" aria-label="パレットに追加"></button>
+                <div class="cp-current__values">
+                    <label class="cp-current__hex">HEX
+                        <input type="text" id="cp_hex" class="yt-input yt-input--data" maxlength="7" spellcheck="false" autocomplete="off">
+                    </label>
+                    <span class="cp-current__rgb" id="cp_rgb"></span>
+                    <span class="cp-current__hsv" id="cp_hsv_text"></span>
+                </div>
+            </div>
+            <div class="cp-hsv">
+                <label class="cp-hsv__row">
+                    <span>H</span>
+                    <input type="range" id="cp_h" min="0" max="360" step="1">
+                    <output></output>
+                </label>
+                <label class="cp-hsv__row">
+                    <span>S</span>
+                    <input type="range" id="cp_s" min="0" max="100" step="1">
+                    <output></output>
+                </label>
+                <label class="cp-hsv__row">
+                    <span>V</span>
+                    <input type="range" id="cp_v" min="0" max="100" step="1">
+                    <output></output>
+                </label>
+            </div>
+            <p class="yt-msg yt-msg--info" data-icon-info id="cp_current_note" aria-live="polite"></p>
+        </section>
+
+        <section class="yt-panel__sec">
+            <div class="yt-panel__head">
+                <h3 class="yt-panel__title">パレット</h3>
+                <span class="cp-actions">
+                    <button type="button" id="cp_palette_copy" class="yt-iconbtn yt-iconbtn--sm" aria-label="HEX 一覧をコピー" title="コピー"><svg class="yt-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="8.5" y="8.5" width="11" height="11" rx="1.5"/><path d="M15.5 8.5V6A1.5 1.5 0 0 0 14 4.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/></svg></button>
+                    <button type="button" id="cp_palette_save" class="yt-iconbtn yt-iconbtn--sm" aria-label="画像で保存" title="保存"><svg class="yt-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4.5v10.5M7.5 10.5l4.5 4.5 4.5-4.5M5 19.5h14"/></svg></button>
+                    <button type="button" id="cp_palette_clear" class="yt-btn yt-btn--sm yt-btn--ghost"><svg class="yt-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 7h14M10 7V5h4v2M7 7l1 12.5h8L17 7"/></svg><span class="yt-btn__text">クリア</span></button>
+                </span>
+            </div>
+            <div id="cp_palette" class="cp-chips" role="group" aria-label="パレット"></div>
+            <p class="yt-msg yt-msg--info" data-icon-info id="cp_palette_note" aria-live="polite"></p>
+        </section>
+
+        <!-- 合成：画像に色を乗せる（適用）か、乗せた層を外して下地に戻す（逆算）。計算は C.blendTables。 -->
+        <section class="yt-panel__sec cp-image-blend">
+            <div class="yt-panel__head">
+                <h3 class="yt-panel__title">合成</h3>
+                <button type="button" id="cp_image_save" class="yt-iconbtn yt-iconbtn--sm" aria-label="表示中の画像を保存" title="保存" disabled><svg class="yt-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4.5v10.5M7.5 10.5l4.5 4.5 4.5-4.5M5 19.5h14"/></svg></button>
+            </div>
+            <label class="yt-check">
+                <input type="checkbox" id="cp_image_blend" disabled>
+                <span class="yt-check__box"><svg class="yt-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+                <span>画像にかける</span>
+            </label>
+            <div class="cp-blend-controls">
+                <label class="yt-field">
+                    <span class="yt-label">モード</span>
+                    <select id="cp_mode" class="yt-select">
+                        <option value="screen">スクリーン</option>
+                        <option value="overlay">オーバーレイ</option>
+                    </select>
+                </label>
+                <label class="yt-field cp-blend-opacity">
+                    <span class="yt-label">不透明度</span>
+                    <span class="cp-blend-opacity__row">
+                        <input type="range" id="cp_opacity" min="0" max="100" step="1" value="100">
+                        <output></output>
+                    </span>
+                </label>
+            </div>
+            <div class="cp-slots">
+                <div class="cp-slot" data-slot="layer">
+                    <button type="button" class="cp-slot__sw" title="現在色にする" aria-label="合成色を現在色にする"></button>
+                    <span class="cp-slot__name">合成色</span>
+                    <input type="text" class="yt-input yt-input--data cp-slot__hex" maxlength="7" spellcheck="false" autocomplete="off" aria-label="合成色の HEX">
+                    <button type="button" class="yt-btn yt-btn--sm yt-btn--ghost cp-slot__take">現在色を入れる</button>
+                </div>
+            </div>
+            <div class="cp-blend-dir" role="radiogroup" aria-label="画像の向き">
+                <label class="yt-radio">
+                    <input type="radio" name="cp_image_direction" value="apply" checked>
+                    <span class="yt-radio__box"></span>
+                    <span>適用</span>
+                </label>
+                <label class="yt-radio">
+                    <input type="radio" name="cp_image_direction" value="undo">
+                    <span class="yt-radio__box"></span>
+                    <span>逆算</span>
+                </label>
+            </div>
+            <p class="yt-msg yt-msg--warn" data-icon-warn id="cp_image_warn" aria-live="polite"></p>
+        </section>
+    </div>
+</main>
+
+<script type="module">
+/* カラーピッカーの DOM に触らない部分（C）：HEX / RGB / HSV の変換、スクリーン・オーバーレイ合成の適用と逆算、
+   画像からの頻出色抽出とスポイトの平均、保存値の正規化。 */
+const C = (() => {
+  /** パレットに保持できる色の上限。 */
+  const MAX_PALETTE = 64;
+  /** パレットの色に付ける名前の長さの上限（code point）。 */
+  const MAX_NAME_LEN = 40;
+  /** スポイトのサンプル範囲（一辺の画素数）。 */
+  const SAMPLE_SIZES = [1, 3, 5];
+  /** 合成モード。 */
+  const BLEND_MODES = ["screen", "overlay"];
+  /** 頻出色抽出の既定の色数。 */
+  const FREQUENT_COUNT = 8;
+
+  /** 逆算で到達できないときの警告文。 */
+  const UNREACHABLE_WARNING = "この下地色・不透明度では届かない（近い色を表示）";
+
+  const clamp01 = (x) => Math.min(1, Math.max(0, x));
+  const to255 = (x) => Math.round(clamp01(x) * 255);
+
+  /** "#rrggbb" / "#rgb"（# 無し・前後空白も可）を {r,g,b} にする。通らなければ null。 */
+  const parseHex = function (s) {
+    if (typeof s !== "string") return null;
+    const m = /^\s*#?([0-9a-f]{3}|[0-9a-f]{6})\s*$/i.exec(s);
+    if (!m) return null;
+    let hex = m[1];
+    if (hex.length === 3) hex = hex.replace(/./g, (c) => c + c);
+    const n = parseInt(hex, 16);
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+  };
+
+  /** {r,g,b} を小文字の "#rrggbb" にする。範囲外は 0..255 に収める。 */
+  const toHex = function (c) {
+    const h = (v) => Math.min(255, Math.max(0, Math.round(v))).toString(16).padStart(2, "0");
+    return "#" + h(c.r) + h(c.g) + h(c.b);
+  };
+
+  /** RGB（0..255）→ HSV（h: 0..360、s / v: 0..100）。小数のまま返す。 */
+  const rgbToHsv = function (c) {
+    const r = c.r / 255, g = c.g / 255, b = c.b / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    const d = max - min;
+    let h = 0;
+    if (d > 0) {
+      if (max === r) h = ((g - b) / d) % 6;
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h *= 60;
+      if (h < 0) h += 360;
+    }
+    const s = max === 0 ? 0 : d / max;
+    return { h, s: s * 100, v: max * 100 };
+  };
+
+  /** HSV（h: 0..360、s / v: 0..100）→ RGB（整数 0..255）。 */
+  const hsvToRgb = function (c) {
+    const h = (((c.h % 360) + 360) % 360) / 60;
+    const s = clamp01(c.s / 100), v = clamp01(c.v / 100);
+    const i = Math.floor(h), f = h - i;
+    const p = v * (1 - s), q = v * (1 - s * f), t = v * (1 - s * (1 - f));
+    const [r, g, b] = [
+      [v, t, p], [q, v, p], [p, v, t], [p, q, v], [t, p, v], [v, p, q],
+    ][i % 6];
+    return { r: to255(r), g: to255(g), b: to255(b) };
+  };
+
+  const modeFn = {
+    screen: (b, l) => 1 - (1 - b) * (1 - l),
+    overlay: (b, l) => (b < 0.5 ? 2 * b * l : 1 - 2 * (1 - b) * (1 - l)),
+  };
+
+  const assertMode = function (mode) {
+    if (!modeFn[mode]) throw new Error("unknown blend mode: " + mode);
+  };
+
+  /** 下地色 base に乗せる色 layer を不透明度 opacity（0..100）で合成した結果色。 */
+  const blend = function (mode, base, layer, opacity) {
+    assertMode(mode);
+    const a = clamp01(opacity / 100);
+    const f = modeFn[mode];
+    const ch = (b, l) => {
+      b /= 255; l /= 255;
+      return to255(b * (1 - a) + f(b, l) * a);
+    };
+    return { r: ch(base.r, layer.r), g: ch(base.g, layer.g), b: ch(base.b, layer.b) };
+  };
+
+  /** 下地色 base に不透明度 opacity で何を乗せれば target になるかを逆算する。
+      返り値は { color, warning }。到達できないチャンネルは 0..255 に収め、warning に文言を入れる。 */
+  const unblend = function (mode, base, target, opacity) {
+    assertMode(mode);
+    const a = clamp01(opacity / 100);
+    let unreachable = false;
+    const ch = (b255, t255) => {
+      const b = b255 / 255, t = t255 / 255;
+      /* 不透明度 0 なら何を乗せても下地のまま。下地と同じなら任意（下地色を置く）、違えば到達不能。 */
+      if (a === 0) {
+        if (b255 !== t255) unreachable = true;
+        return b255;
+      }
+      const o = (t - b * (1 - a)) / a; /* 合成関数 f(b, l) が取るべき値 */
+      let l;
+      if (mode === "screen") {
+        if (b >= 1) {
+          /* screen(1, l) は常に 1。結果が 1 以外なら到達不能。 */
+          if (Math.abs(o - 1) > 1e-6) unreachable = true;
+          return b255;
+        }
+        l = 1 - (1 - o) / (1 - b);
+      } else if (b < 0.5) {
+        if (b <= 0) {
+          /* overlay(0, l) は常に 0。 */
+          if (Math.abs(o) > 1e-6) unreachable = true;
+          return b255;
+        }
+        l = o / (2 * b);
+      } else {
+        if (b >= 1) {
+          /* overlay(1, l) は常に 1。 */
+          if (Math.abs(o - 1) > 1e-6) unreachable = true;
+          return b255;
+        }
+        l = 1 - (1 - o) / (2 * (1 - b));
+      }
+      /* 丸め誤差ぶんは許す（1/255 の半分）。 */
+      const tol = 0.5 / 255 / a;
+      if (l < -tol || l > 1 + tol) unreachable = true;
+      return to255(l);
+    };
+    const color = { r: ch(base.r, target.r), g: ch(base.g, target.g), b: ch(base.b, target.b) };
+    return { color, warning: unreachable ? UNREACHABLE_WARNING : null };
+  };
+
+  /** 1 チャンネルぶんの逆算：層 l（0..1）を不透明度 a で乗せて t（0..1）になる下地 b（0..1）を返す。
+      解けないときは { b, unreachable } の unreachable を立てる（b は 0..1 に収めた近似）。 */
+  const solveBase = function (mode, l, t, a) {
+    const tol = a > 0 ? 0.5 / 255 / a : 0;
+    const finish = (b) => ({ b: clamp01(b), unreachable: b < -tol || b > 1 + tol });
+    if (a === 0) return { b: t, unreachable: false }; /* 何も乗っていない */
+    if (mode === "screen") {
+      /* t = b(1 - a·l) + a·l */
+      const d = 1 - a * l;
+      if (d <= 1e-9) return { b: t, unreachable: Math.abs(t - 1) > 1e-6 }; /* a=1, l=1: 常に 1 */
+      return finish((t - a * l) / d);
+    }
+    /* overlay: b < 0.5 の枝 t = b(1 - a + 2a·l)、b >= 0.5 の枝 t = b(1 + a - 2a·l) + a(2l - 1)。
+       f は b について単調非減少で b = 0.5 で連続なので、両枝を解いて自分の枝に収まる方を採る。 */
+    const d1 = 1 - a + 2 * a * l;
+    const d2 = 1 + a - 2 * a * l;
+    const b1 = d1 > 1e-9 ? t / d1 : null;
+    const b2 = d2 > 1e-9 ? (t - a * (2 * l - 1)) / d2 : null;
+    if (b1 !== null && b1 < 0.5) return finish(b1);
+    if (b2 !== null && b2 >= 0.5) return finish(b2);
+    /* 平坦部（a=1 で l=0 の下半分、l=1 の上半分）や丸め誤差で境界を跨いだとき。
+       平坦部では t が決まった値になるので、それに合えば任意（境界側の端を置く）、合わなければ到達不能。 */
+    if (b1 === null) return { b: Math.min(t, 0.5), unreachable: Math.abs(t) > 1e-6 && t < 0.5 - 1e-6 && b2 === null };
+    if (b2 === null) return { b: Math.max(t, 0.5), unreachable: Math.abs(t - 1) > 1e-6 && t >= 0.5 && b1 === null };
+    return finish(b1 < 0.5 ? b1 : b2);
+  };
+
+  /** 層 layer を不透明度 opacity で乗せて target になる下地色を逆算する（unblend の対：乗せた層を外す）。
+      返り値は { color, warning }。到達できないチャンネルは 0..255 に収め、warning に文言を入れる。 */
+  const unblendBase = function (mode, layer, target, opacity) {
+    assertMode(mode);
+    const a = clamp01(opacity / 100);
+    let unreachable = false;
+    const ch = (l255, t255) => {
+      const r = solveBase(mode, l255 / 255, t255 / 255, a);
+      if (r.unreachable) unreachable = true;
+      return to255(r.b);
+    };
+    const color = { r: ch(layer.r, target.r), g: ch(layer.g, target.g), b: ch(layer.b, target.b) };
+    return { color, warning: unreachable ? UNREACHABLE_WARNING : null };
+  };
+
+  /** 画像にかけるためのチャンネル別の変換表。層と不透明度が固定なので、各チャンネルの 0..255 → 0..255 を表にしておけば
+      画素ごとの計算は表引きで足りる。direction は "apply"（画像を下地にして合成）か "undo"（乗せた層を外す）。
+      返り値は { tables: [r, g, b]（Uint8ClampedArray(256)）, unreachable: [r, g, b]（Uint8Array(256)、1 なら到達不能） }。 */
+  const blendTables = function (mode, layer, opacity, direction) {
+    assertMode(mode);
+    const a = clamp01(opacity / 100);
+    const f = modeFn[mode];
+    const tables = [], unreachable = [];
+    for (const l255 of [layer.r, layer.g, layer.b]) {
+      const l = l255 / 255;
+      const t = new Uint8ClampedArray(256);
+      const u = new Uint8Array(256);
+      for (let v = 0; v < 256; v++) {
+        const x = v / 255;
+        if (direction === "undo") {
+          const r = solveBase(mode, l, x, a);
+          t[v] = to255(r.b);
+          u[v] = r.unreachable ? 1 : 0;
+        } else {
+          t[v] = to255(x * (1 - a) + f(x, l) * a);
+        }
+      }
+      tables.push(t);
+      unreachable.push(u);
+    }
+    return { tables, unreachable };
+  };
+
+  /** RGBA の画素列に blendTables の表を引いて新しい画素列を返す。アルファはそのまま。
+      返り値は { data, unreachable: 到達不能だった画素の数 }。 */
+  const applyTables = function (data, tables, unreachable) {
+    const out = new Uint8ClampedArray(data.length);
+    const [tr, tg, tb] = tables;
+    const [ur, ug, ub] = unreachable;
+    let bad = 0;
+    for (let i = 0; i + 3 < data.length; i += 4) {
+      const r = data[i], g = data[i + 1], b = data[i + 2];
+      out[i] = tr[r]; out[i + 1] = tg[g]; out[i + 2] = tb[b]; out[i + 3] = data[i + 3];
+      if (ur[r] | ug[g] | ub[b]) bad++;
+    }
+    return { data: out, unreachable: bad };
+  };
+
+  /** 量子化の段階数（各チャンネル 4 bit）。 */
+  const QUANT_BITS = 4;
+  /** 統合する RGB 距離。この距離未満の色は同じ色として数える。 */
+  const MERGE_DISTANCE = 48;
+
+  /** RGBA の画素列（ImageData.data）から頻出色を上位 n 件、{hex, ratio}（ratio は 0..1）で返す。
+      各チャンネルを 4 bit に量子化したヒストグラムを多い順に見て、採用済みの色と近いビンはそこへ統合する。
+      色はビンの中心ではなく属する画素の平均。アルファ 0 の画素は数えない。 */
+  const frequentColors = function (data, width, height, n = FREQUENT_COUNT) {
+    const shift = 8 - QUANT_BITS;
+    const bins = new Map(); /* key → { count, r, g, b }（r/g/b は合計） */
+    let total = 0;
+    const len = Math.min(data.length, width * height * 4);
+    for (let i = 0; i < len; i += 4) {
+      if (data[i + 3] === 0) continue;
+      const r = data[i], g = data[i + 1], b = data[i + 2];
+      const key = ((r >> shift) << (QUANT_BITS * 2)) | ((g >> shift) << QUANT_BITS) | (b >> shift);
+      let bin = bins.get(key);
+      if (!bin) {
+        bin = { count: 0, r: 0, g: 0, b: 0 };
+        bins.set(key, bin);
+      }
+      bin.count++;
+      bin.r += r; bin.g += g; bin.b += b;
+      total++;
+    }
+    if (total === 0) return [];
+
+    const sorted = Array.from(bins.values()).sort((x, y) => y.count - x.count);
+    const picked = []; /* { count, r, g, b }（合計のまま） */
+    const mean = (p) => ({ r: p.r / p.count, g: p.g / p.count, b: p.b / p.count });
+    const dist = (p, q) => Math.hypot(p.r - q.r, p.g - q.g, p.b - q.b);
+    for (const bin of sorted) {
+      const m = mean(bin);
+      let near = null;
+      let nearD = Infinity;
+      for (const p of picked) {
+        const d = dist(m, mean(p));
+        if (d < MERGE_DISTANCE && d < nearD) {
+          near = p;
+          nearD = d;
+        }
+      }
+      if (near) {
+        near.count += bin.count;
+        near.r += bin.r; near.g += bin.g; near.b += bin.b;
+      } else {
+        picked.push({ count: bin.count, r: bin.r, g: bin.g, b: bin.b });
+      }
+    }
+    picked.sort((x, y) => y.count - x.count);
+    return picked.slice(0, n).map((p) => ({ hex: toHex(mean(p)), ratio: p.count / total }));
+  };
+
+  /** (x, y) を中心とした size × size の画素の RGB 平均。範囲は画像の中にクリップし、アルファは見ない。 */
+  const averageColor = function (data, width, height, x, y, size) {
+    const half = Math.floor(size / 2);
+    const x0 = Math.max(0, x - half), x1 = Math.min(width - 1, x + half);
+    const y0 = Math.max(0, y - half), y1 = Math.min(height - 1, y + half);
+    let r = 0, g = 0, b = 0, n = 0;
+    for (let yy = y0; yy <= y1; yy++) {
+      for (let xx = x0; xx <= x1; xx++) {
+        const i = (yy * width + xx) * 4;
+        r += data[i]; g += data[i + 1]; b += data[i + 2];
+        n++;
+      }
+    }
+    if (n === 0) return null;
+    return { r: Math.round(r / n), g: Math.round(g / n), b: Math.round(b / n) };
+  };
+
+  /** 保存されていたパレットを正規化して [{hex, name}] にする。
+      配列でなければ空。各要素は "#rrggbb"（旧形式）か {hex, name}。HEX として読めるものだけ小文字に揃え、
+      名前は文字列でなければ空、前後の空白を落として MAX_NAME_LEN 文字で切る。hex の重複は先勝ち、MAX_PALETTE 件まで。 */
+  const normalizePalette = function (raw) {
+    if (!Array.isArray(raw)) return [];
+    const out = [];
+    for (const v of raw) {
+      const src = typeof v === "string" ? { hex: v, name: "" } : v;
+      if (!src || typeof src !== "object") continue;
+      const c = parseHex(src.hex);
+      if (!c) continue;
+      const hex = toHex(c);
+      if (out.some((p) => p.hex === hex)) continue;
+      out.push({ hex, name: normalizeName(src.name) });
+      if (out.length >= MAX_PALETTE) break;
+    }
+    return out;
+  };
+
+  /** 色の名前を正規化する。文字列でなければ空、前後の空白を落として MAX_NAME_LEN 文字（code point）で切る。 */
+  const normalizeName = function (name) {
+    if (typeof name !== "string") return "";
+    return Array.from(name.trim()).slice(0, MAX_NAME_LEN).join("");
+  };
+
+  return { MAX_PALETTE, MAX_NAME_LEN, SAMPLE_SIZES, BLEND_MODES, FREQUENT_COUNT, UNREACHABLE_WARNING, parseHex, toHex, rgbToHsv, hsvToRgb, blend, unblend, unblendBase, blendTables, applyTables, frequentColors, averageColor, normalizePalette, normalizeName };
+})();
+
+/* パレット / 画像の PNG 化とダウンロード。 */
+const { paletteToBlob, timestampName, downloadBlob, canvasToBlob } = (() => {
+  /* パレットを画像（PNG）にする。縦一列に「スウォッチ・HEX・名前」を 1 行ずつ描く。
+     DOM は canvas だけ。色とフォントは呼び出し側がページの CSS カスタムプロパティから渡す（ライト / ダークに追従）。 */
+
+  /** CSS px 単位のレイアウト。描画は SCALE 倍で行う。 */
+  const PAD = 24;
+  const ROW = 48;
+  const SWATCH = 36;
+  const GAP = 16;
+  const MIN_WIDTH = 360;
+  const SCALE = 2;
+  const HEX_FONT_SIZE = 15;
+  const NAME_FONT_SIZE = 14;
+
+  /** palette（[{hex, name}]）を theme（{bg, text, line, fontBase, fontMono}）で描いて PNG の Blob を返す。 */
+  const paletteToBlob = async function (palette, theme) {
+    const hexFont = `${HEX_FONT_SIZE}px ${theme.fontMono}`;
+    const nameFont = `${NAME_FONT_SIZE}px ${theme.fontBase}`;
+    if (document.fonts && document.fonts.load) {
+      try {
+        await Promise.all([document.fonts.load(hexFont), document.fonts.load(nameFont)]);
+      } catch (e) {
+        /* 読めなくても代替フォントで描く。 */
+      }
+    }
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    /* 幅は一番長い HEX と名前から決める。 */
+    ctx.font = hexFont;
+    const hexWidth = Math.max(0, ...palette.map((p) => ctx.measureText(p.hex).width));
+    ctx.font = nameFont;
+    const nameWidth = Math.max(0, ...palette.map((p) => (p.name ? ctx.measureText(p.name).width : 0)));
+    const width = Math.ceil(Math.max(MIN_WIDTH, PAD * 2 + SWATCH + GAP + hexWidth + (nameWidth > 0 ? GAP + nameWidth : 0)));
+    const height = PAD * 2 + ROW * Math.max(1, palette.length);
+
+    canvas.width = width * SCALE;
+    canvas.height = height * SCALE;
+    ctx.scale(SCALE, SCALE);
+    ctx.fillStyle = theme.bg;
+    ctx.fillRect(0, 0, width, height);
+    ctx.textBaseline = "middle";
+
+    palette.forEach((p, i) => {
+      const top = PAD + ROW * i + (ROW - SWATCH) / 2;
+      const mid = PAD + ROW * i + ROW / 2;
+      ctx.fillStyle = p.hex;
+      ctx.fillRect(PAD, top, SWATCH, SWATCH);
+      ctx.strokeStyle = theme.line;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(PAD + 0.5, top + 0.5, SWATCH - 1, SWATCH - 1);
+
+      let x = PAD + SWATCH + GAP;
+      ctx.fillStyle = theme.text;
+      ctx.font = hexFont;
+      ctx.fillText(p.hex, x, mid);
+      if (p.name) {
+        x += hexWidth + GAP;
+        ctx.font = nameFont;
+        ctx.fillText(p.name, x, mid);
+      }
+    });
+
+    return canvasToBlob(canvas);
+  };
+
+  /** 保存するファイル名（<prefix>-YYYYMMDD-HHMMSS.png）。 */
+  const timestampName = function (prefix, date = new Date()) {
+    const n = (v, w = 2) => String(v).padStart(w, "0");
+    return `${prefix}-${date.getFullYear()}${n(date.getMonth() + 1)}${n(date.getDate())}-${n(date.getHours())}${n(date.getMinutes())}${n(date.getSeconds())}.png`;
+  };
+
+
+  /** Blob をファイルとしてダウンロードさせる。
+      blob: URL は <a download> で落とすだけで <img> には入れない。 */
+  const downloadBlob = function (blob, name) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  /** canvas を PNG の Blob にする。 */
+  const canvasToBlob = (canvas) => new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("toBlob"))), "image/png");
+  });
+
+  return { paletteToBlob, timestampName, downloadBlob, canvasToBlob };
+})();
+
+/* アイコン（JS が組み立てる DOM で使う分だけ）。24px グリッド・線 1.75px・stroke="currentColor"。 */
+const ICON_PATHS = {
+  trash: '<path d="M5 7h14M10 7V5h4v2M7 7l1 12.5h8L17 7"/>',
+};
+const icon = (name, opts) => '<svg class="yt-icon" width="' + opts.size + '" height="' + opts.size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + ICON_PATHS[name] + "</svg>";
+
+/* 以下、DOM 配線。
+   画像の読み込みと canvas、スポイト、頻出色、現在色と HSV スライダー、パレット（localStorage）、画像への合成（色を乗せる / 乗せた層を外す）。
+   画像は createImageBitmap（保険は data: URL）で読み、blob: URL を <img> に入れない。 */
+/** DOM 構築後にハンドラを実行する（構築済みなら即時）。 */
+const init = function (eventHandler) {
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", eventHandler);
+  else eventHandler();
+};
+
+const STORE_KEY = "yoshinamoe.colorpicker.v1";
+/** 元画像を保持する canvas の最長辺。これより大きい画像は縮小してから画素を読む。 */
+const MAX_SIDE = 4096;
+/** 頻出色を数える縮小画像の最長辺。 */
+const THUMB_SIDE = 128;
+/** 「クリア」の確認が戻るまでの時間。 */
+const CLEAR_CONFIRM_MS = 3000;
+
+const store = {
+  load() {
+    try {
+      return JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+    } catch (e) {
+      return null;
+    }
+  },
+  save(v) {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(v));
+    } catch (e) {
+      /* 保存できなくても画面は動かす（プライベートモード等）。 */
+    }
+  },
+};
+
+init(function () {
+  const el = {};
+  for (const id of [
+    "cp_main", "cp_image_info", "cp_remove", "cp_drop", "cp_file", "cp_canvas", "cp_drop_hint",
+    "cp_hover", "cp_hover_sw", "cp_hover_hex", "cp_frequent",
+    "cp_hold", "cp_copy", "cp_current_sw", "cp_hex", "cp_rgb", "cp_hsv_text", "cp_h", "cp_s", "cp_v", "cp_current_note",
+    "cp_palette_copy", "cp_palette_save", "cp_palette_clear", "cp_palette", "cp_palette_note",
+    "cp_mode", "cp_opacity",
+    "cp_image_blend", "cp_image_save", "cp_image_warn",
+  ]) el[id] = document.getElementById(id);
+  /* 合成色の欄（スウォッチ・HEX・「現在色を入れる」）。 */
+  const layerNode = document.querySelector(".cp-slot");
+  const layerSlot = {
+    sw: layerNode.querySelector(".cp-slot__sw"),
+    hex: layerNode.querySelector(".cp-slot__hex"),
+    take: layerNode.querySelector(".cp-slot__take"),
+  };
+
+  // ================================= 状態
+
+  const saved = store.load();
+  const state = {
+    image: null, /* ImageData（元画像。最長辺 MAX_SIDE まで） */
+    view: null, /* 表示している ImageData。合成を画像にかけていなければ image と同じ参照 */
+    imageBlend: { on: false, direction: "apply" }, /* 合成を画像にかける。direction は apply（画像を下地に）/ undo（乗せた層を外す） */
+    frequent: [], /* [{hex, ratio}] */
+    sample: 1,
+    /* 現在色。スライダーを触ったときは hsv が正（rgb は導出）、それ以外は rgb が正（hsv は導出）。 */
+    current: { r: 128, g: 128, b: 128 },
+    hsv: C.rgbToHsv({ r: 128, g: 128, b: 128 }),
+    palette: C.normalizePalette(saved && saved.palette), /* [{hex, name}] */
+    /* 画像に乗せる層（モード・不透明度・合成色）。 */
+    blend: {
+      mode: "screen",
+      opacity: 100,
+      layer: { r: 128, g: 128, b: 128 },
+    },
+  };
+
+  const save = () => store.save({ palette: state.palette });
+  const hasColor = (hex) => state.palette.some((p) => p.hex === hex);
+
+  const setCurrentRgb = function (c) {
+    state.current = { r: c.r, g: c.g, b: c.b };
+    state.hsv = C.rgbToHsv(state.current);
+    renderCurrent();
+  };
+
+  const setCurrentHsv = function (h) {
+    state.hsv = { h: h.h, s: h.s, v: h.v };
+    state.current = C.hsvToRgb(state.hsv);
+    renderCurrent();
+  };
+
+  // ================================= 描画
+
+  const rgbText = (c) => `rgb(${c.r}, ${c.g}, ${c.b})`;
+  const hsvText = (h) => `hsv(${Math.round(h.h)}°, ${Math.round(h.s)}%, ${Math.round(h.v)}%)`;
+
+  /** 色のチップ（スウォッチ + HEX + 右側の要素）。 */
+  const chip = function (hex, trailing) {
+    const root = document.createElement("span");
+    root.className = "cp-chip";
+    const sw = document.createElement("button");
+    sw.type = "button";
+    sw.className = "cp-chip__sw";
+    sw.style.background = hex;
+    sw.title = "現在色にする";
+    sw.setAttribute("aria-label", hex + " を現在色にする");
+    sw.addEventListener("click", () => setCurrentRgb(C.parseHex(hex)));
+    const label = document.createElement("span");
+    label.className = "cp-chip__hex";
+    label.textContent = hex;
+    root.append(sw, label);
+    if (trailing) root.append(trailing);
+    return root;
+  };
+
+  const renderCurrent = function () {
+    const hex = C.toHex(state.current);
+    el.cp_current_sw.style.background = hex;
+    if (document.activeElement !== el.cp_hex) el.cp_hex.value = hex;
+    el.cp_rgb.textContent = rgbText(state.current);
+    el.cp_hsv_text.textContent = hsvText(state.hsv);
+    for (const [input, key] of [[el.cp_h, "h"], [el.cp_s, "s"], [el.cp_v, "v"]]) {
+      const v = Math.round(state.hsv[key]);
+      input.value = String(v);
+      input.nextElementSibling.textContent = key === "h" ? v + "°" : v + "%";
+    }
+    /* H のスライダーは今の S・V での色相の帯、S・V はそれぞれの端の色を背景にする。 */
+    const at = (h, s, v) => C.toHex(C.hsvToRgb({ h, s, v }));
+    el.cp_h.style.background = `linear-gradient(to right, ${[0, 60, 120, 180, 240, 300, 360].map((h) => at(h, state.hsv.s, state.hsv.v)).join(", ")})`;
+    el.cp_s.style.background = `linear-gradient(to right, ${at(state.hsv.h, 0, state.hsv.v)}, ${at(state.hsv.h, 100, state.hsv.v)})`;
+    el.cp_v.style.background = `linear-gradient(to right, ${at(state.hsv.h, state.hsv.s, 0)}, ${at(state.hsv.h, state.hsv.s, 100)})`;
+    el.cp_hold.disabled = hasColor(hex);
+    el.cp_hold.querySelector(".yt-btn__text").textContent = el.cp_hold.disabled ? "追加済み" : "パレットに追加";
+  };
+
+  const renderPalette = function () {
+    el.cp_palette.replaceChildren();
+    for (const entry of state.palette) {
+      const hex = entry.hex;
+      const name = document.createElement("input");
+      name.type = "text";
+      name.className = "cp-chip__name";
+      name.placeholder = "名前";
+      name.maxLength = C.MAX_NAME_LEN;
+      name.spellcheck = false;
+      name.autocomplete = "off";
+      name.value = entry.name;
+      name.setAttribute("aria-label", hex + " の名前");
+      /* 打ったらすぐ保存する。再描画するとフォーカスが外れるのでしない。 */
+      name.addEventListener("input", () => {
+        entry.name = C.normalizeName(name.value);
+        save();
+      });
+      name.addEventListener("blur", () => { name.value = entry.name; });
+      const x = document.createElement("button");
+      x.type = "button";
+      x.className = "yt-iconbtn yt-iconbtn--sm cp-chip__x";
+      x.innerHTML = icon("trash", { size: 16 });
+      x.title = "削除";
+      x.setAttribute("aria-label", hex + " を削除");
+      x.addEventListener("click", () => {
+        state.palette = state.palette.filter((p) => p.hex !== hex);
+        save();
+        renderPalette();
+        renderCurrent();
+      });
+      const trailing = document.createDocumentFragment();
+      trailing.append(name, x);
+      el.cp_palette.append(chip(hex, trailing));
+    }
+    el.cp_palette_copy.disabled = state.palette.length === 0;
+    el.cp_palette_save.disabled = state.palette.length === 0;
+    el.cp_palette_clear.disabled = state.palette.length === 0;
+    el.cp_hold.disabled = hasColor(C.toHex(state.current));
+  };
+
+  const renderFrequent = function () {
+    el.cp_frequent.replaceChildren();
+    if (state.frequent.length === 0) {
+      const empty = document.createElement("span");
+      empty.className = "cp-chips__empty";
+      empty.textContent = state.image ? "色が無い" : "画像を選択してください。";
+      el.cp_frequent.append(empty);
+      return;
+    }
+    for (const f of state.frequent) {
+      const ratio = document.createElement("span");
+      ratio.className = "cp-chip__ratio";
+      ratio.textContent = (f.ratio * 100).toFixed(f.ratio < 0.1 ? 1 : 0) + "%";
+      el.cp_frequent.append(chip(f.hex, ratio));
+    }
+  };
+
+  const renderBlend = function () {
+    const b = state.blend;
+    const hex = C.toHex(b.layer);
+    layerSlot.sw.style.background = hex;
+    if (document.activeElement !== layerSlot.hex) layerSlot.hex.value = hex;
+    el.cp_opacity.value = String(b.opacity);
+    el.cp_opacity.nextElementSibling.textContent = b.opacity + "%";
+    if (state.imageBlend.on) scheduleRenderImage();
+  };
+
+  /* 合成の設定を画像に反映して描き直す。表示用の view を決め、canvas・頻出色・警告を更新する。
+     スポイトと頻出色は view（見えている方）から取る。 */
+  const renderImage = function () {
+    if (!state.image) return;
+    const { width, height } = state.image;
+    let bad = 0;
+    if (state.imageBlend.on) {
+      const b = state.blend;
+      const t = C.blendTables(b.mode, b.layer, b.opacity, state.imageBlend.direction);
+      const r = C.applyTables(state.image.data, t.tables, t.unreachable);
+      state.view = new ImageData(r.data, width, height);
+      bad = r.unreachable;
+    } else {
+      state.view = state.image;
+    }
+    el.cp_canvas.width = width;
+    el.cp_canvas.height = height;
+    el.cp_canvas.getContext("2d").putImageData(state.view, 0, 0);
+    const [tw, th] = fit(width, height, THUMB_SIDE);
+    const thumb = rasterize(el.cp_canvas, tw, th);
+    state.frequent = C.frequentColors(thumb.data.data, tw, th);
+    renderFrequent();
+    el.cp_image_warn.textContent = bad > 0 ? `到達できない画素が ${bad.toLocaleString()} 個（0..255 に収めた）` : "";
+  };
+
+  /* 大きい画像でスライダーを動かすと 1 回が数十 ms かかるので、1 フレームに 1 回にまとめる。 */
+  let imageRenderQueued = false;
+  const scheduleRenderImage = function () {
+    if (imageRenderQueued) return;
+    imageRenderQueued = true;
+    requestAnimationFrame(() => {
+      imageRenderQueued = false;
+      renderImage();
+    });
+  };
+
+  const renderImageControls = function () {
+    el.cp_image_blend.checked = state.imageBlend.on;
+    el.cp_image_blend.disabled = !state.image;
+    el.cp_image_save.disabled = !state.image;
+    for (const radio of document.querySelectorAll("input[name=cp_image_direction]")) {
+      radio.checked = radio.value === state.imageBlend.direction;
+    }
+  };
+
+  // ================================= 画像
+
+  const readViaDataURL = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("decode"));
+      img.src = reader.result;
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+
+  const decode = async function (file) {
+    if (typeof createImageBitmap === "function") {
+      try {
+        return await createImageBitmap(file);
+      } catch (e) {
+        /* 対応していない形式などは data: URL 経由で試す。 */
+      }
+    }
+    return readViaDataURL(file);
+  };
+
+  /** 画像を w×h に描いて ImageData を返す。 */
+  const rasterize = function (src, w, h) {
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(src, 0, 0, w, h);
+    return { canvas, data: ctx.getImageData(0, 0, w, h) };
+  };
+
+  const fit = function (w, h, side) {
+    const scale = Math.min(1, side / Math.max(w, h));
+    return [Math.max(1, Math.round(w * scale)), Math.max(1, Math.round(h * scale))];
+  };
+
+  const loadImage = async function (file) {
+    if (!file || !/^image\//.test(file.type)) {
+      el.cp_image_info.textContent = "画像ファイルではありません";
+      return;
+    }
+    el.cp_image_info.textContent = "読み込み中…";
+    let src;
+    try {
+      src = await decode(file);
+    } catch (e) {
+      el.cp_image_info.textContent = "読み込めませんでした";
+      return;
+    }
+    const srcW = src.naturalWidth || src.width, srcH = src.naturalHeight || src.height;
+    const [w, h] = fit(srcW, srcH, MAX_SIDE);
+    const full = rasterize(src, w, h);
+    if (src.close) src.close();
+
+    state.image = full.data;
+    el.cp_canvas.hidden = false;
+    renderImage();
+    renderImageControls();
+    el.cp_drop.classList.add("has-image");
+    el.cp_drop_hint.textContent = "ドロップ・貼り付けで差し替え";
+    el.cp_image_info.textContent = "";
+    el.cp_remove.hidden = false;
+  };
+
+  /** 画像を外して添付領域（クリックで選択）を元に戻す。パレットや現在色は触らない。 */
+  const removeImage = function () {
+    state.image = null;
+    state.view = null;
+    state.frequent = [];
+    state.imageBlend.on = false;
+    el.cp_image_warn.textContent = "";
+    renderImageControls();
+    el.cp_canvas.hidden = true;
+    el.cp_canvas.width = 0; /* 画素を手放す */
+    el.cp_canvas.height = 0;
+    el.cp_drop.classList.remove("has-image");
+    el.cp_drop_hint.textContent = "画像を選択";
+    el.cp_image_info.textContent = "";
+    el.cp_remove.hidden = true;
+    showHover(null);
+    renderFrequent();
+  };
+  el.cp_remove.addEventListener("click", removeImage);
+
+  /* 画像を読み込んだ後は添付領域のクリックでファイル選択を開かない
+     （画像の端をスポイトしようとして外側を押したときに開いてしまうため）。差し替えはドロップ / 貼り付けか、除去してから。 */
+  el.cp_drop.addEventListener("click", (e) => {
+    if (state.image) e.preventDefault();
+  });
+
+  el.cp_file.addEventListener("change", () => {
+    if (el.cp_file.files[0]) loadImage(el.cp_file.files[0]);
+    el.cp_file.value = "";
+  });
+
+  for (const ev of ["dragenter", "dragover"]) {
+    el.cp_drop.addEventListener(ev, (e) => {
+      e.preventDefault();
+      el.cp_drop.classList.add("is-over");
+    });
+  }
+  el.cp_drop.addEventListener("dragleave", () => el.cp_drop.classList.remove("is-over"));
+  el.cp_drop.addEventListener("drop", (e) => {
+    e.preventDefault();
+    el.cp_drop.classList.remove("is-over");
+    const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) loadImage(file);
+  });
+
+  document.addEventListener("paste", (e) => {
+    if (!e.clipboardData) return;
+    for (const item of e.clipboardData.items) {
+      if (/^image\//.test(item.type)) {
+        e.preventDefault();
+        loadImage(item.getAsFile());
+        return;
+      }
+    }
+  });
+
+  // ================================= スポイト
+
+  /** ポインタの位置を元画像の画素座標に直す。画像の外なら null。 */
+  const pixelAt = function (e) {
+    const rect = el.cp_canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return null;
+    const x = Math.floor((e.clientX - rect.left) * el.cp_canvas.width / rect.width);
+    const y = Math.floor((e.clientY - rect.top) * el.cp_canvas.height / rect.height);
+    if (x < 0 || y < 0 || x >= el.cp_canvas.width || y >= el.cp_canvas.height) return null;
+    return { x, y };
+  };
+
+  const sampleAt = function (e) {
+    if (!state.image) return null;
+    const p = pixelAt(e);
+    if (!p) return null;
+    return C.averageColor(state.view.data, state.view.width, state.view.height, p.x, p.y, state.sample);
+  };
+
+  const showHover = function (c) {
+    el.cp_hover.classList.toggle("is-on", !!c);
+    el.cp_hover_sw.style.background = c ? C.toHex(c) : "transparent";
+    el.cp_hover_hex.textContent = c ? C.toHex(c) : "";
+  };
+
+  /* クリック（タップ）して離した位置の色を取る。ドラッグ中はプレビューだけ更新する。 */
+  let pressing = false;
+  el.cp_canvas.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0 || !state.image) return;
+    e.preventDefault(); /* label の中なのでファイル選択を開かせない */
+    pressing = true;
+    el.cp_canvas.setPointerCapture(e.pointerId);
+    showHover(sampleAt(e));
+  });
+  el.cp_canvas.addEventListener("pointermove", (e) => showHover(sampleAt(e)));
+  el.cp_canvas.addEventListener("pointerup", (e) => {
+    if (!pressing) return;
+    pressing = false;
+    const c = sampleAt(e);
+    if (c) setCurrentRgb(c);
+  });
+  el.cp_canvas.addEventListener("pointercancel", () => { pressing = false; });
+  el.cp_canvas.addEventListener("pointerleave", () => { if (!pressing) showHover(null); });
+  /* canvas のクリックで <label> がファイル選択を開かないようにする。 */
+  el.cp_canvas.addEventListener("click", (e) => e.preventDefault());
+
+  for (const radio of document.querySelectorAll("input[name=cp_sample]")) {
+    radio.addEventListener("change", () => {
+      const n = Number(radio.value);
+      if (C.SAMPLE_SIZES.includes(n)) state.sample = n;
+    });
+  }
+
+  // ================================= 現在色
+
+  const note = function (target, text) {
+    target.textContent = text;
+    clearTimeout(target._timer);
+    target._timer = setTimeout(() => { target.textContent = ""; }, 2000);
+  };
+
+  const copyText = async function (text, target) {
+    try {
+      await navigator.clipboard.writeText(text);
+      note(target, "コピーしました");
+    } catch (e) {
+      note(target, "コピーできませんでした");
+    }
+  };
+
+  const holdCurrent = function () {
+    const hex = C.toHex(state.current);
+    if (hasColor(hex)) return;
+    if (state.palette.length >= C.MAX_PALETTE) {
+      note(el.cp_palette_note, `パレットに追加できるのは ${C.MAX_PALETTE} 色まで`);
+      return;
+    }
+    state.palette = [...state.palette, { hex, name: "" }];
+    save();
+    renderPalette();
+    renderCurrent();
+  };
+
+  el.cp_hold.addEventListener("click", holdCurrent);
+  el.cp_current_sw.addEventListener("click", holdCurrent);
+  el.cp_copy.addEventListener("click", () => copyText(C.toHex(state.current), el.cp_current_note));
+
+  el.cp_hex.addEventListener("input", () => {
+    const c = C.parseHex(el.cp_hex.value);
+    el.cp_hex.classList.toggle("is-invalid", !c);
+    if (c) setCurrentRgb(c);
+  });
+  el.cp_hex.addEventListener("blur", () => {
+    el.cp_hex.classList.remove("is-invalid");
+    el.cp_hex.value = C.toHex(state.current);
+  });
+
+  for (const [input, key] of [[el.cp_h, "h"], [el.cp_s, "s"], [el.cp_v, "v"]]) {
+    input.addEventListener("input", () => {
+      setCurrentHsv({ ...state.hsv, [key]: Number(input.value) });
+    });
+  }
+
+  // ================================= パレット
+
+  el.cp_palette_copy.addEventListener("click", () => copyText(state.palette.map((p) => p.hex).join("\n"), el.cp_palette_note));
+
+  /* 画像で保存。色とフォントはページの CSS カスタムプロパティから取る（ライト / ダークに追従）。 */
+  el.cp_palette_save.addEventListener("click", async () => {
+    if (state.palette.length === 0) return;
+    const css = getComputedStyle(document.documentElement);
+    const v = (name, fallback) => (css.getPropertyValue(name) || "").trim() || fallback;
+    try {
+      const blob = await paletteToBlob(state.palette, {
+        bg: v("--bg", "#f7f5f2"),
+        text: v("--ink", "#26221f"),
+        line: v("--line", "#e6e1db"),
+        fontBase: v("--font-sans", "sans-serif"),
+        fontMono: v("--font-mono", "monospace"),
+      });
+      downloadBlob(blob, timestampName("palette"));
+    } catch (e) {
+      note(el.cp_palette_note, "画像を作れませんでした");
+    }
+  });
+
+  let clearArmed = null;
+  const clearText = el.cp_palette_clear.querySelector(".yt-btn__text");
+  el.cp_palette_clear.addEventListener("click", () => {
+    if (clearArmed) {
+      clearTimeout(clearArmed);
+      clearArmed = null;
+      clearText.textContent = "クリア";
+      state.palette = [];
+      save();
+      renderPalette();
+      renderCurrent();
+      return;
+    }
+    clearText.textContent = "もう一度押すと消える";
+    clearArmed = setTimeout(() => {
+      clearArmed = null;
+      clearText.textContent = "クリア";
+    }, CLEAR_CONFIRM_MS);
+  });
+
+  // ================================= 合成
+
+  el.cp_mode.addEventListener("change", () => {
+    if (C.BLEND_MODES.includes(el.cp_mode.value)) state.blend.mode = el.cp_mode.value;
+    renderBlend();
+  });
+  el.cp_opacity.addEventListener("input", () => {
+    state.blend.opacity = Math.min(100, Math.max(0, Number(el.cp_opacity.value) || 0));
+    renderBlend();
+  });
+  layerSlot.sw.addEventListener("click", () => setCurrentRgb(state.blend.layer));
+  layerSlot.take.addEventListener("click", () => {
+    state.blend.layer = { ...state.current };
+    renderBlend();
+  });
+  layerSlot.hex.addEventListener("input", () => {
+    const c = C.parseHex(layerSlot.hex.value);
+    layerSlot.hex.classList.toggle("is-invalid", !c);
+    if (c) {
+      state.blend.layer = c;
+      renderBlend();
+    }
+  });
+  layerSlot.hex.addEventListener("blur", () => {
+    layerSlot.hex.classList.remove("is-invalid");
+    layerSlot.hex.value = C.toHex(state.blend.layer);
+  });
+
+  // ================================= 合成を画像にかける
+
+  el.cp_image_blend.addEventListener("change", () => {
+    state.imageBlend.on = el.cp_image_blend.checked && !!state.image;
+    renderImage();
+  });
+  for (const radio of document.querySelectorAll("input[name=cp_image_direction]")) {
+    radio.addEventListener("change", () => {
+      state.imageBlend.direction = radio.value === "undo" ? "undo" : "apply";
+      if (state.imageBlend.on) renderImage();
+    });
+  }
+  el.cp_image_save.addEventListener("click", async () => {
+    if (!state.image) return;
+    try {
+      downloadBlob(await canvasToBlob(el.cp_canvas), timestampName(state.imageBlend.on ? "composite" : "image"));
+    } catch (e) {
+      el.cp_image_warn.textContent = "画像を作れませんでした";
+    }
+  });
+
+  // ================================= 初期描画
+
+  renderCurrent();
+  renderPalette();
+  renderFrequent();
+  renderBlend();
+  renderImageControls();
+});
+</script>
+</body>
+</html>
