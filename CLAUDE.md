@@ -11,16 +11,17 @@ yoshina.moe 系のサイト（`KashiroHeart/yoshinamoego`）と同じサーバ�
 - 内部リンクも拡張子なし・ルート相対で書く（`/about`、`/examples/1`）
 - **example 同士で CSS / JS を共有しない。** 各 example は 1 枚の HTML で完結させる。
   共有してよいのは `assets/examples-header.*`（共通ヘッダー）だけ
-- `assets/site.css` はトップと about 専用。example からは読み込まない
+- `assets/site.css` / `assets/site.js` はトップと about 専用。example からは読み込まない
 
 ## 構成
 
 | パス | URL | 内容 |
 | --- | --- | --- |
-| `index.html` | `/` | トップページ（examples の一覧） |
+| `index.html` | `/` | トップページ（タイトル画面と円盤ナビ = examples の一覧） |
 | `about.html` | `/about` | このサイトについて |
 | `examples/<N>.html` | `/examples/<N>` | 試作ページ。番号は 1 から欠番なしで増やす |
 | `assets/site.css` | `/assets/site.css` | トップと about のスタイル |
+| `assets/site.js` | `/assets/site.js` | トップと about の画面制御（円盤ナビ・ビュー切り替え・pjax） |
 | `assets/examples-header.{css,js}` | `/assets/…` | examples 共通ヘッダー（上端にカーソルを寄せると出る） |
 | `deploy/nginx.conf.example` | — | nginx の設定例と配置手順。公開しない |
 
@@ -40,9 +41,20 @@ yoshina.moe 系のサイト（`KashiroHeart/yoshinamoego`）と同じサーバ�
    <li><a href="/examples/<N>" target="_blank"><span class="num">#<N></span><タイトル><span class="arrow" aria-hidden="true">→</span></a></li>
    ```
 
+一覧は円盤ナビとして描かれるが、`site.js` が `<ul class="examples">` の `<li>` を読んで並べるので、
+足すのは上の 1 行だけでよい（番号表示の `#01` 形式への整形も `site.js` がする）。
+
 共通ヘッダーは固定配置で重ねるだけで、ページのレイアウトには触らない。
 クラス名・CSS 変数は `xh-` 接頭辞なので、example 側では `xh-` を使わない。
 ページのテーマ切り替えが `<html data-theme="light|dark">` に従っていれば、ヘッダーの配色も追従する。
+
+## トップと about
+
+- 2 ページは同じ `.stage` の上の「ビュー」として動く。`.stage[data-view]` が `title`（タイトル）/ `nav`（円盤ナビ）/ `about`、
+  `[data-prev]` が直前のビュー。見た目とアニメーションは `site.css` が `data-view` / `data-prev` で切り替える
+- `/` ⇄ `/about` は pjax。相手のページを fetch し、`.stage` 直下の `data-part="top"` / `data-part="about"` の要素だけを差し込む。
+  どちらのページにも `.stage` と `data-part` の構造を崩さずに置くこと
+- JS が無いときは `<html class="no-js">` のまま、ふつうの縦並びで表示される
 
 ## 確認
 
