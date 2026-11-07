@@ -1,47 +1,72 @@
 <!doctype html>
-<html lang="ja">
+<html lang="ja" class="no-js">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sandbox.yoshina.moe</title>
 <meta name="description" content="デザイン試作置き場">
+<script>document.documentElement.classList.replace('no-js', 'js');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/site.css">
+<script src="/assets/site.js" defer></script>
 </head>
 <body>
-<header class="site-header">
-  <div class="wrap">
-    <h1 class="site-title"><a href="/">sandbox</a></h1>
-    <nav class="site-nav" aria-label="サイト">
-      <a href="/" aria-current="page">トップページ</a>
-      <a href="/about">このサイトについて</a>
-    </nav>
+<!-- data-part="top" の要素は about から pjax で戻るときにも読み込まれる -->
+<div class="stage" data-view="title" data-prev="title">
+
+  <section class="view view-title fade-title" data-part="top" aria-label="タイトル">
+    <a class="portal ghost" href="https://yoshina.moe/">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg>
+      <span>yoshina.moe</span>
+    </a>
+    <div class="title-center">
+      <h1 class="site-title">sandbox</h1>
+      <a class="about-link ghost" href="/about" data-pjax="about">このサイトについて</a>
+    </div>
+  </section>
+
+  <div class="disc-pos" data-part="top">
+    <div class="disc-offset">
+      <button class="disc-face" type="button" aria-label="Examples を開く"></button>
+      <div class="disc-groove g1" aria-hidden="true"></div>
+      <div class="disc-groove g2" aria-hidden="true"></div>
+      <div class="disc-rot" aria-hidden="true"><div class="disc-rim"></div></div>
+      <div class="disc-labels fade-nav">
+        <nav class="disc-nav" aria-label="Examples">
+          <!-- 追加するときは番号順に末尾へ足す -->
+          <ul class="examples">
+            <li><a href="/examples/1" target="_blank"><span class="num">#1</span>JSON Converter<span class="arrow" aria-hidden="true">→</span></a></li>
+            <li><a href="/examples/2" target="_blank"><span class="num">#2</span>基数変換 A 縦積み<span class="arrow" aria-hidden="true">→</span></a></li>
+            <li><a href="/examples/3" target="_blank"><span class="num">#3</span>基数変換 B 左右2ペイン<span class="arrow" aria-hidden="true">→</span></a></li>
+            <li><a href="/examples/4" target="_blank"><span class="num">#4</span>基数変換 C 基数バー<span class="arrow" aria-hidden="true">→</span></a></li>
+            <li><a href="/examples/5" target="_blank"><span class="num">#5</span>ヴィジュネル暗号 A 縦一列<span class="arrow" aria-hidden="true">→</span></a></li>
+            <li><a href="/examples/6" target="_blank"><span class="num">#6</span>ヴィジュネル暗号 B 左右2カラム<span class="arrow" aria-hidden="true">→</span></a></li>
+            <li><a href="/examples/7" target="_blank"><span class="num">#7</span>ヴィジュネル暗号 C 設定レール<span class="arrow" aria-hidden="true">→</span></a></li>
+            <li><a href="/examples/8" target="_blank"><span class="num">#8</span>コード進行エディタ<span class="arrow" aria-hidden="true">→</span></a></li>
+            <li><a href="/examples/9" target="_blank"><span class="num">#9</span>カラーピッカー<span class="arrow" aria-hidden="true">→</span></a></li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+    <div class="disc-overlay fade-nav" aria-hidden="true">
+      <div class="disc-pointer"></div>
+      <div class="disc-counter">01</div>
+    </div>
+    <div class="disc-cap fade-title" aria-hidden="true"><span class="bob">↓ SCROLL DOWN ↓</span></div>
   </div>
-</header>
 
-<main>
-  <div class="wrap">
-    <p class="lead">デザイン試作置き場。</p>
-
-    <h2>Examples</h2>
-    <!-- 追加するときは番号順に末尾へ足す -->
-    <ul class="examples">
-      <li><a href="/examples/1" target="_blank"><span class="num">#1</span>JSON Converter<span class="arrow" aria-hidden="true">→</span></a></li>
-      <li><a href="/examples/2" target="_blank"><span class="num">#2</span>基数変換 A 縦積み<span class="arrow" aria-hidden="true">→</span></a></li>
-      <li><a href="/examples/3" target="_blank"><span class="num">#3</span>基数変換 B 左右2ペイン<span class="arrow" aria-hidden="true">→</span></a></li>
-      <li><a href="/examples/4" target="_blank"><span class="num">#4</span>基数変換 C 基数バー<span class="arrow" aria-hidden="true">→</span></a></li>
-      <li><a href="/examples/5" target="_blank"><span class="num">#5</span>ヴィジュネル暗号 A 縦一列<span class="arrow" aria-hidden="true">→</span></a></li>
-      <li><a href="/examples/6" target="_blank"><span class="num">#6</span>ヴィジュネル暗号 B 左右2カラム<span class="arrow" aria-hidden="true">→</span></a></li>
-      <li><a href="/examples/7" target="_blank"><span class="num">#7</span>ヴィジュネル暗号 C 設定レール<span class="arrow" aria-hidden="true">→</span></a></li>
-      <li><a href="/examples/8" target="_blank"><span class="num">#8</span>コード進行エディタ<span class="arrow" aria-hidden="true">→</span></a></li>
-      <li><a href="/examples/9" target="_blank"><span class="num">#9</span>カラーピッカー<span class="arrow" aria-hidden="true">→</span></a></li>
-    </ul>
+  <div class="nav-ui fade-nav" data-part="top">
+    <button class="back-title ghost" type="button">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 18h9a4 4 0 0 0 4-4V5"/><path d="M12 10l5-5 5 5"/></svg>
+      <span>タイトルに戻る</span>
+    </button>
+    <div class="scroll-hint" aria-hidden="true">
+      <svg width="14" height="22" viewBox="0 0 14 22" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="12" height="20" rx="6"/><line x1="7" y1="5" x2="7" y2="9"/></svg>
+      <span>SCROLL</span>
+    </div>
   </div>
-</main>
 
-<footer class="site-footer">
-  <div class="wrap"><a href="https://yoshina.moe/">yoshina.moe</a></div>
-</footer>
+</div>
 </body>
 </html>
