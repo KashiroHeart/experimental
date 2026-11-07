@@ -43,6 +43,7 @@ svg { flex: none; }
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
+  overflow: clip; /* スクロールコンテナにしない（フォーカス移動で中身がずれないように） */
   touch-action: none;
   -webkit-user-select: none;
   user-select: none;
@@ -75,6 +76,7 @@ svg { flex: none; }
   position: absolute; left: 32px; top: 28px;
   display: flex; align-items: center; gap: 8px; min-height: 44px;
   font-size: 14px; font-weight: 500;
+  z-index: 1; /* .title-center の下に隠れてクリックできなくならないように */
 }
 .title-center {
   position: absolute; left: 0; right: 0; top: 0;
@@ -99,6 +101,9 @@ svg { flex: none; }
 .stage[data-view="nav"] .disc-pos { transform: translate(var(--nx), var(--ny)); }
 .stage[data-view="nav"] .disc-offset { transform: rotate(0deg); }
 .stage[data-view="nav"] :is(.disc-pos, .disc-offset) { transition-delay: .2s; }
+/* site.js が寸法を入れるまでは隠し、入れた位置へ動くアニメーションも出さない */
+.js .stage:not(.is-ready) .disc-pos { opacity: 0; }
+.js .stage:not(.is-ready) :is(.disc-pos, .disc-offset) { transition: none; }
 /* タイトル → about: 回りながら下へ加速して退場 */
 .stage[data-view="about"] .disc-pos { transform: translate(var(--tx), var(--ay)); }
 .stage[data-view="about"] .disc-offset { transform: rotate(-150deg); }
