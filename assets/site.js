@@ -178,6 +178,7 @@
       start();
     }
     function key(e) {
+      if (e.key === 'Escape') { e.preventDefault(); goTitle(); return; }
       const a = mode === 'spring' ? target : Math.round(clamp(p));
       const up = e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp';
       if (up && a === 0) { e.preventDefault(); goTitle(); return; }
@@ -203,6 +204,9 @@
 
     onView(view());
     layout();
+    // 寸法が入った状態を確定させてから表示とアニメーションを有効にする
+    void stage.offsetWidth;
+    stage.classList.add('is-ready');
     return { layout, wheel, dragStart, dragBy, dragEnd, key, click, focusItem, goTitle, onView };
   }
 
@@ -322,6 +326,11 @@
 
   document.addEventListener('keydown', (e) => {
     if (disc && view() === 'nav' && !locked() && !e.altKey && !e.ctrlKey && !e.metaKey) disc.key(e);
+  });
+
+  // overflow: clip の無いブラウザ向け: フォーカス移動などでずれたら戻す
+  stage.addEventListener('scroll', () => {
+    if (stage.scrollTop || stage.scrollLeft) stage.scrollTop = stage.scrollLeft = 0;
   });
 
   window.addEventListener('resize', () => { if (disc) disc.layout(); });
