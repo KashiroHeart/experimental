@@ -1,0 +1,29 @@
+:root{color-scheme:light}
+body{margin:0;background:#fff;color:#1a1a1a;font-family:"Hiragino Sans","Yu Gothic UI","Noto Sans JP",system-ui,sans-serif;font-size:16px;line-height:1.5}
+.lbl{font-size:13px;color:#595959}
+.fld{box-sizing:border-box;width:100%;border:1px solid #8c8c8c;border-radius:4px;background:#fff;color:#1a1a1a;font:inherit;padding:10px 12px;outline:none;overflow-wrap:anywhere}
+.fld.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+.fld::placeholder{color:#767676}
+.fld:hover{border-color:#1d4ed8}
+.fld:focus-visible{border-color:#1d4ed8;box-shadow:0 0 0 1px #1d4ed8}
+.fld[readonly]{background:#f2f2f2}
+.fld[readonly]:hover{border-color:#8c8c8c}
+.fld[readonly]:focus-visible{border-color:#1d4ed8;box-shadow:0 0 0 1px #1d4ed8}
+.fld[aria-invalid="true"],.fld[aria-invalid="true"]:hover,.fld[aria-invalid="true"]:focus-visible{border-color:#b42318;box-shadow:0 0 0 1px #b42318}
+select.fld{height:44px;padding:0 10px;cursor:pointer}
+.btn{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border:1px solid #8c8c8c;border-radius:4px;background:#fff;color:#1a1a1a;font:inherit;cursor:pointer;position:relative}
+.btn:hover{border-color:#1d4ed8;color:#1d4ed8;z-index:1}
+.btn:focus-visible{outline:2px solid #1d4ed8;outline-offset:2px}
+.btn:active{background:#f2f2f2}
+.btn[aria-pressed="true"]{background:#1a1a1a;border-color:#1a1a1a;color:#fff}
+.btn[aria-pressed="true"]:hover{border-color:#1d4ed8;box-shadow:0 0 0 1px #1d4ed8;color:#fff}
+.seg{display:inline-flex}
+.seg .btn{border-radius:0}
+.seg .btn:first-child{border-radius:4px 0 0 4px}
+.seg .btn:last-child{border-radius:0 4px 4px 0}
+.seg .btn + .btn{margin-left:-1px}
+.chk{display:inline-flex;align-items:center;gap:10px;min-height:44px;cursor:pointer}
+.chk input{width:20px;height:20px;margin:0;accent-color:#1a1a1a;cursor:pointer}
+.chk input:focus-visible{outline:2px solid #1d4ed8;outline-offset:2px}
+.chk:hover{color:#1d4ed8}
+.msg{margin:0;min-height:20px;font-size:13px;line-height:20px;color:#b42318}

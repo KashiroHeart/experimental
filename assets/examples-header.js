@@ -6,7 +6,7 @@
   const MARGIN = 4;       // ヘッダーの下に設ける遊び
   const HIDE_DELAY = 150; // 離れてから隠すまで（ms）
 
-  const m = location.pathname.match(/\/examples\/(\d+)/);
+  const m = location.pathname.match(/^\/no\.(\d+)(\/|$)/);
 
   const bar = document.createElement('header');
   bar.className = 'xh-bar';

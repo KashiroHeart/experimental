@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ja" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>#8 コード進行エディタ | sandbox</title>
+<link rel="stylesheet" href="/assets/examples-header.css">
+<script src="/assets/examples-header.js" defer></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/no.8/main.css">
+</head>
+<body>
+<div class="app">
+  <div class="bar">
+    <button type="button" class="btn ic" id="play" aria-label="再生 / 一時停止">
+      <svg id="playIc" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" stroke="none"></path></svg>
+    </button>
+    <button type="button" class="btn ic" id="stop" aria-label="停止">
+      <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="2" y="2" width="10" height="10" stroke="none"></rect></svg>
+    </button>
+    <div class="pos" id="pos" aria-live="off">1.1.000</div>
+    <label class="fld"><span>BPM</span><input class="num" id="bpm" type="number" min="10" max="999" step="any" value="120" required></label>
+    <span class="info"><button type="button" class="ib" aria-label="BPM について" aria-describedby="tipBpm">i</button><span class="tip" role="tooltip" id="tipBpm">1 分あたりの 4 分音符の数。10 以上の数値で入力します。</span></span>
+    <label class="fld"><span>グリッド</span>
+      <select class="sel" id="snap">
+        <option value="480">1/4</option>
+        <option value="240" selected>1/8</option>
+        <option value="120">1/16</option>
+      </select>
+    </label>
+    <div class="sp"></div>
+    <button type="button" class="btn" id="addBtn" aria-expanded="false" aria-controls="pop">
+      <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1v10M1 6h10" fill="none" stroke-width="1.5"></path></svg>コード
+    </button>
+    <span class="info"><button type="button" class="ib" aria-label="操作方法" aria-describedby="tipHelp">i</button><span class="tip r" role="tooltip" id="tipHelp"><dl>
+      <dt>コード</dt><dd>ルートと種類を選び、現在位置に配置</dd>
+      <dt>ダブルクリック</dt><dd>ピアノロールの空き位置で音を追加（コードの範囲内ならそのコードに追加）</dd>
+      <dt>ノートをドラッグ</dt><dd>上下で音高、左右でコードごと移動</dd>
+      <dt>右端をドラッグ</dt><dd>コードの長さ（全構成音が追従）</dd>
+      <dt>コード欄</dt><dd>クリックで選択、ドラッグで移動、ダブルクリックで置き換え</dd>
+      <dt>Delete</dt><dd>選択中の音またはコードを削除</dd>
+      <dt>↑ ↓</dt><dd>選択を半音移動（Shift で 1 オクターブ）</dd>
+      <dt>Space</dt><dd>再生 / 停止（再生開始位置に戻る）</dd>
+      <dt>小節番号の欄</dt><dd>クリック・ドラッグで現在位置を移動</dd>
+    </dl></span></span>
+  </div>
+
+  <div class="scroller" id="scroller">
+    <div class="content" id="content">
+      <div class="top">
+        <div class="corner" id="corner">
+          <div style="height:24px">小節</div>
+          <div style="height:24px">拍子
+            <span class="info"><button type="button" class="ib" aria-label="拍子について" aria-describedby="tipMeter">i</button><span class="tip" role="tooltip" id="tipMeter">小節の頭に置き、その小節から先の区切り方を変えます。音の長さは変わりません。分子・分母とも 1 以上。</span></span>
+          </div>
+          <div style="height:24px">調
+            <span class="info"><button type="button" class="ib" aria-label="調について" aria-describedby="tipKey">i</button><span class="tip" role="tooltip" id="tipKey">コードの頭に置けます。置いた位置から先の調を変え、コード名の表記（♯ / ♭）に使います。</span></span>
+          </div>
+          <div style="height:40px">コード
+            <span class="info"><button type="button" class="ib" aria-label="コード名について" aria-describedby="tipChord">i</button><span class="tip" role="tooltip" id="tipChord">構成音から判定したコード名。判定できない構成のときは表示しません。</span></span>
+          </div>
+        </div>
+        <div class="lanes" id="lanes">
+          <div class="lane ruler" id="ruler" style="height:24px"></div>
+          <div class="lane" id="meterLane" style="height:24px"><div class="ghost" id="meterGhost" aria-hidden="true">+</div></div>
+          <div class="lane" id="keyLane" style="height:24px"><div class="ghost" id="keyGhost" aria-hidden="true">+</div></div>
+          <div class="lane" id="chordLane" style="height:40px"></div>
+          <div class="ph cap" id="ph1" style="height:112px"></div>
+        </div>
+      </div>
+      <div class="body">
+        <div class="keys" id="keys"></div>
+        <div class="grid" id="grid">
+          <div id="rows"></div>
+          <div id="lines"></div>
+          <div id="band"></div>
+          <div id="notes"></div>
+          <div class="ph" id="ph2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="pop" id="pop" role="dialog" aria-modal="false"></div>
+<div class="badge" id="badge"></div>
+
+<script src="/no.8/main.js"></script>
+</body>
+</html>
