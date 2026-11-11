@@ -156,6 +156,9 @@ svg { flex: none; }
   color: var(--muted);
 }
 .examples .is-active .num { color: var(--accent); }
+/* 選択中の項目だけ、hover でリンクらしく見せる（li の transform は JS が書くので a 側で拡大） */
+.examples a { transform-origin: 0 50%; transition: transform .2s var(--ease), color .2s; }
+.stage[data-view="nav"] .examples .is-active a:hover { transform: scale(1.06); color: var(--accent); }
 .examples .arrow { display: none; }
 
 .disc-overlay { pointer-events: none; }
@@ -175,6 +178,8 @@ svg { flex: none; }
 }
 @keyframes bob { 0%, 100% { transform: translateY(-4px); } 50% { transform: translateY(4px); } }
 .bob { display: inline-block; animation: bob 1.6s ease-in-out infinite; }
+.cap-text { transition: opacity .3s; }
+.cap-text.is-swapping { opacity: 0; }
 
 .nav-ui {
   position: absolute; right: 32px; bottom: 28px;

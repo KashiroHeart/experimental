@@ -202,6 +202,22 @@
       if (face) face.tabIndex = next === 'title' ? 0 : -1;
     }
 
+    // タイトル画面の案内文（矢印は固定で、文言だけ 5 秒ごとに切り替える）
+    const capText = stage.querySelector('.cap-text');
+    if (capText) {
+      const CAPS = ['CLICK OR TOUCH HERE', 'SCROLL DOWN', 'PRESS SPACE OR ENTER KEY'];
+      let capIdx = 0;
+      setInterval(() => {
+        capIdx = (capIdx + 1) % CAPS.length;
+        if (reduceMotion.matches) { capText.textContent = CAPS[capIdx]; return; }
+        capText.classList.add('is-swapping');
+        setTimeout(() => {
+          capText.textContent = CAPS[capIdx];
+          capText.classList.remove('is-swapping');
+        }, 300);
+      }, 5000);
+    }
+
     onView(view());
     layout();
     // 寸法が入った状態を確定させてから表示とアニメーションを有効にする
@@ -325,6 +341,14 @@
   stage.addEventListener('touchcancel', touchEnd);
 
   document.addEventListener('keydown', (e) => {
+    // タイトル表示中の Space / Enter → 円盤ナビ（リンクやボタン上では本来の動作を優先）
+    if (disc && view() === 'title' && (e.key === ' ' || e.key === 'Enter')) {
+      if (locked() || e.repeat || e.isComposing || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      if (e.target.closest && e.target.closest('a, button, input, textarea, select')) return;
+      e.preventDefault();
+      setView('nav');
+      return;
+    }
     if (disc && view() === 'nav' && !locked() && !e.altKey && !e.ctrlKey && !e.metaKey) disc.key(e);
   });
 
