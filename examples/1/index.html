@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>#1 JSON Converter | sandbox</title>
+<link rel="stylesheet" href="/assets/examples-header.css">
+<script src="/assets/examples-header.js" defer></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/no.1/main.css">
+</head>
+<body>
+<header>
+  <div class="logo"><div class="logo-mark">{}</div>JSON Formatter</div>
+  <div class="spacer"></div>
+  <span class="hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> 整形</span>
+  <button class="btn icon" id="themeBtn" title="テーマ切替" aria-label="テーマ切替">
+    <svg id="themeIcon" viewBox="0 0 24 24"></svg>
+  </button>
+</header>
+
+<div class="toolbar">
+  <div class="group">
+    <button class="btn primary" id="formatBtn"><svg viewBox="0 0 24 24"><path d="M21 10H3M21 6H3M21 14H3M17 18H3"/></svg>整形</button>
+    <button class="btn" id="minifyBtn"><svg viewBox="0 0 24 24"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></svg>圧縮</button>
+    <button class="btn" id="validateBtn"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>検証</button>
+  </div>
+  <div class="divider"></div>
+  <label class="field">インデント
+    <select id="indent">
+      <option value="2">2 スペース</option>
+      <option value="4">4 スペース</option>
+      <option value="tab">タブ</option>
+    </select>
+  </label>
+  <label class="switch"><input type="checkbox" id="sortKeys"><span></span>キーをソート</label>
+  <label class="switch"><input type="checkbox" id="autoFmt" checked><span></span>自動整形</label>
+</div>
+
+<main>
+  <section class="pane">
+    <div class="pane-head">入力
+      <div class="spacer"></div>
+      <button class="btn" id="sampleBtn"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>サンプル</button>
+      <button class="btn icon" id="uploadBtn" title="ファイルを開く" aria-label="ファイルを開く"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg></button>
+      <button class="btn icon" id="pasteBtn" title="貼り付け" aria-label="貼り付け"><svg viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg></button>
+      <button class="btn icon" id="clearBtn" title="クリア" aria-label="クリア"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+      <input type="file" id="file" accept=".json,application/json,text/plain" hidden>
+    </div>
+    <div class="editor">
+      <div class="gutter" id="inGutter">1</div>
+      <textarea id="input" spellcheck="false" placeholder='ここに JSON を貼り付け、またはファイルをドロップ&#10;&#10;{"hello": "world"}'></textarea>
+    </div>
+    <div class="status" id="inStatus"><span class="dot"></span><span id="inMsg">入力待ち</span><span class="meta" id="inMeta"></span></div>
+  </section>
+
+  <section class="pane">
+    <div class="pane-head">出力
+      <div class="spacer"></div>
+      <button class="btn" id="copyBtn"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>コピー</button>
+      <button class="btn icon" id="downloadBtn" title="ダウンロード" aria-label="ダウンロード"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>
+    </div>
+    <div class="editor">
+      <div class="gutter" id="outGutter">1</div>
+      <pre class="output" id="output" tabindex="0" data-empty="整形結果がここに表示されます"></pre>
+    </div>
+    <div class="status" id="outStatus"><span class="dot"></span><span id="outMsg">—</span><span class="meta" id="outMeta"></span></div>
+  </section>
+</main>
+
+<div class="toast" id="toast"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span id="toastMsg"></span></div>
+
+<script src="/no.1/main.js"></script>
+</body>
+</html>

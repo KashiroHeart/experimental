@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>#7 ヴィジュネル暗号 C 設定レール | sandbox</title>
+<link rel="stylesheet" href="/assets/examples-header.css">
+<script src="/assets/examples-header.js" defer></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+Hebrew:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/no.7/main.css">
+</head>
+<body>
+<div class="tool" style="display:flex;flex-direction:column">
+  <main style="width:100%;max-width:1200px;margin:0 auto;padding:48px 32px 64px;display:flex;flex-direction:column;gap:40px">
+    <div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 16px">
+      <h1 style="margin:0;font-size:28px;line-height:1.3;font-weight:700">ヴィジュネル暗号</h1>
+      <p style="margin:0;font-size:14px;color:#595959">Vigenère cipher</p>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 48px">
+      <aside class="rail" aria-label="オプション">
+        <h2 style="margin:0;font-size:14px;font-weight:700">オプション</h2>
+
+        <fieldset class="fs">
+          <legend>表配列</legend>
+          <div class="opts">
+            <label class="opt"><input type="radio" name="tbl" value="latin" checked><span>ラテン文字</span><span class="g">A–Z</span></label>
+            <label class="opt"><input type="radio" name="tbl" value="goju"><span>五十音</span><span class="g">あ–ん</span></label>
+            <label class="opt"><input type="radio" name="tbl" value="iroha"><span>いろは</span><span class="g">い–す</span></label>
+            <label class="opt"><input type="radio" name="tbl" value="cyr"><span>キリル文字</span><span class="g">А–Я</span></label>
+            <label class="opt"><input type="radio" name="tbl" value="heb"><span>ヘブライ文字</span><span class="g">א–ת</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="fs">
+          <legend>表配列の設定</legend>
+          <div class="s-latin">
+            <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px">
+              <span style="font-size:15px">出力形式</span>
+              <div class="seg">
+                <label class="chip"><input type="radio" name="case" value="lower"><span>小文字</span></label>
+                <label class="chip"><input type="radio" name="case" value="upper" checked><span>大文字</span></label>
+              </div>
+            </div>
+          </div>
+          <div class="s-goju"><p style="margin:0;min-height:44px;display:flex;align-items:center;font-size:14px;color:#595959">追加の設定はありません。</p></div>
+          <div class="s-iroha">
+            <label class="sw"><input type="checkbox" id="opt-n"><span class="trk"></span><span>配列に「ん」を含める</span><span class="st"></span></label>
+          </div>
+          <div class="s-cyr">
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <label class="sw"><input type="checkbox" id="opt-yo"><span class="trk"></span><span>配列にёを含める</span><span class="st"></span></label>
+              <p style="margin:0;font-size:13px;color:#595959">無効のとき、入力の ё は е に正規化されます。</p>
+            </div>
+          </div>
+          <div class="s-heb"><p style="margin:0;min-height:44px;display:flex;align-items:center;font-size:14px;color:#595959">追加の設定はありません。</p></div>
+        </fieldset>
+
+        <fieldset class="fs">
+          <legend>表にない文字</legend>
+          <div class="seg">
+            <label class="chip"><input type="radio" name="miss" value="pass" checked><span>素通し</span></label>
+            <label class="chip"><input type="radio" name="miss" value="drop"><span>除去</span></label>
+          </div>
+        </fieldset>
+      </aside>
+
+      <div class="work">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500">
+            <span id="dir-from">平文</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg>
+            <span id="dir-to">暗号文</span>
+            <span id="dir-mode" style="font-weight:400;color:#595959">(暗号化)</span>
+          </div>
+          <button type="button" id="swap" class="btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16"></path><path d="M7 20l-3-3"></path><path d="M7 20l3-3"></path><path d="M17 20V4"></path><path d="M17 4l-3 3"></path><path d="M17 4l3 3"></path></svg>
+            入れ替え
+          </button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <label for="src" class="lb">文字列 (変換前)</label>
+            <span class="tag" id="src-tag">平文</span>
+          </div>
+          <textarea id="src" class="field" dir="auto" rows="4" spellcheck="false">ATTACK AT DAWN</textarea>
+        </div>
+
+        <div class="fg" style="display:flex;flex-direction:column;gap:8px">
+          <label for="key" class="lb">鍵</label>
+          <input id="key" class="field" dir="auto" type="text" value="LEMON" autocomplete="off" spellcheck="false" aria-describedby="key-err">
+          <p id="key-err" class="err">鍵に、表にない文字が含まれています。</p>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <label for="dst" class="lb">文字列 (変換後)</label>
+            <span class="tag" id="dst-tag">暗号文</span>
+          </div>
+          <textarea id="dst" class="field" dir="auto" rows="4" readonly>LXFOPV EF RNHR</textarea>
+        </div>
+
+        <details class="sample">
+          <summary>
+            <span>表見本</span>
+            <span class="cap"><span class="s-latin">ラテン文字</span><span class="s-goju">五十音</span><span class="s-iroha">いろは</span><span class="s-cyr">キリル文字</span><span class="s-heb">ヘブライ文字</span></span>
+          </summary>
+          <div style="padding:8px 4px 24px;overflow-x:auto">
+            <table class="tr" id="sample"></table>
+          </div>
+        </details>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="/no.7/main.js"></script>
+</body>
+</html>

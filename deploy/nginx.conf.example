@@ -8,8 +8,9 @@
 #   sudo install -d -m 0755 /var/www/sandbox.yoshina.moe
 #   sudo rsync -a --delete index.html about.html examples assets /var/www/sandbox.yoshina.moe/
 #
-# URL は拡張子なし。/examples/1 → examples/1.html、/about → about.html を返す。
-# .html 付きで来たら拡張子なしへ 301 で寄せる。
+# URL は拡張子なし。/about → about.html を返す。.html 付きで来たら拡張子なしへ 301 で寄せる。
+# example は /no.<N> で見せる。/no.1 → examples/1/index.html、/no.1/main.js → examples/1/main.js、
+# /no.1/foo → examples/1/foo.html。旧 URL（/examples/1 など）は /no.1 へ 301 で寄せる。
 
 server {
     listen 80;
@@ -48,6 +49,25 @@ server {
 
     location ~ ^(/.+)\.html$ {
         return 301 $1$is_args$args;
+    }
+
+    # example: /no.N → examples/N/index.html、/no.N/x → examples/N/x（無ければ x.html）
+    location ~ ^/no\.(\d+)$ {
+        try_files /examples/$1/index.html =404;
+    }
+
+    location ~ ^/no\.(\d+)/(index)?$ {
+        return 301 /no.$1$is_args$args;
+    }
+
+    location ~ ^/no\.(\d+)/(.+)$ {
+        try_files /examples/$1/$2 /examples/$1/$2.html =404;
+    }
+
+    # 旧 URL（/examples/N.html → /examples/N は上の .html ルールが先に寄せる）と
+    # 実ディレクトリへの直アクセスは /no.N へ寄せる。
+    location ~ ^/examples/(\d+)(/.*)?$ {
+        return 301 /no.$1$2$is_args$args;
     }
 
     location / {
