@@ -1,4 +1,4 @@
-# sandbox.yoshina.moe
+# sandbox
 
 デザイン試作置き場。<https://sandbox.yoshina.moe/>
 
