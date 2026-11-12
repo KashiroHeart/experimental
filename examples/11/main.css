@@ -1,0 +1,313 @@
+/* ============ トークン（ツール置き場のテーマ 1 の値。OS 設定がダークならテーマ 3 の値） ============ */
+:root {
+  color-scheme: light;
+
+  --bg: #f8f3f2;
+  --surface: #fffcfb;
+  --surface-sunken: #f3ebe9;
+  --surface-hover: #f2e8e5;
+  --line: #ebdfdc;
+  --line-control: #8e807c;
+
+  --ink: #2a2120;
+  --ink-2: #5d4f4c;
+  --ink-3: #736360;
+
+  --coral: #f0897d;
+  --coral-hover: #e5796c;
+  --coral-ink: #ad4538;
+  --coral-soft: #fbe7e3;
+
+  --amber: #ffb26b;
+  --amber-ink: #8f5210;
+  --amber-soft: #fff0e0;
+
+  --teal: #8a84d6;
+  --teal-ink: #4a43a8;
+  --teal-soft: #e8e7f6;
+
+  --danger-ink: #b3261e;
+  --on-accent: #2b1410;
+  --focus: var(--coral-ink);
+
+  --shadow-pop: 0 8px 24px rgba(42, 33, 32, 0.12);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --sidebar: 340px;
+  --content-max: 1200px;
+
+  --radius-0: 0px;
+  --radius-control: 4px;
+  --radius-check: 2px;
+  --radius-card: 8px;
+
+  --duration-fast: 0.12s;
+  --duration-base: 0.2s;
+  --duration-slow: 0.3s;
+
+  /* HackGen Console がローカルに入っていればそれを、無ければ Google Fonts の Zen Kaku Gothic New / BIZ UDGothic を使う。 */
+  --font-sans: "HackGen Console NF", "HackGen Console", "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  --font-mono: "HackGen Console NF", "HackGen Console", "BIZ UDGothic", ui-monospace, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #171514;
+    --surface: #1f1c1a;
+    --surface-sunken: #100f0e;
+    --surface-hover: #2a2623;
+    --line: #36312d;
+    --line-control: #7d746c;
+    --ink: #f2ede8;
+    --ink-2: #c4bbb2;
+    --ink-3: #9e958c;
+    --coral-hover: #ffa04a;
+    --coral-ink: #ffa24d;
+    --coral-soft: #43260f;
+    --amber-ink: #ffb26b;
+    --amber-soft: #3a2b1c;
+    --teal-ink: #ff6f61;
+    --teal-soft: #441a17;
+    --danger-ink: #ff9c8f;
+    --coral: #ff8a1f;
+    --teal: #ff3b3b;
+    --on-accent: #241000;
+    --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.55);
+  }
+}
+
+html { height: 100%; }
+
+
+/* ============ 部品（yt-*） ============ */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0;
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 26px;
+  -webkit-font-smoothing: antialiased;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-control) transparent;
+}
+
+body > main {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+h1, h2, h3, h4, p, ul, ol, figure, fieldset, legend {
+  margin: 0;
+  padding: 0;
+}
+
+::selection { background: var(--coral-soft); color: var(--ink); }
+
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+[hidden] { display: none !important; }
+
+input, textarea, select, button {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  margin: 0;
+}
+
+button { cursor: pointer; }
+
+.yt-icon { display: block; flex: 0 0 auto; }
+
+/* ---------- 共通：フォーム部品は動かさない ---------- */
+.yt-btn, .yt-iconbtn { transition: none; animation: none; }
+
+/* ---------- Button ---------- */
+.yt-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  height: 36px; padding: 0 var(--space-4);
+  border: 1px solid var(--line-control); border-radius: var(--radius-control);
+  background: var(--surface); color: var(--ink);
+  font: 500 13px/20px var(--font-sans); cursor: pointer; white-space: nowrap;
+}
+.yt-btn:hover { background: var(--surface-hover); }
+.yt-btn--ghost { background: transparent; border-color: transparent; color: var(--ink-2); }
+/* 背景を出さず、文字色の明度だけで hover を示す。 */
+.yt-btn--ghost:hover { background: transparent; color: var(--ink); }
+.yt-btn--sm { height: 28px; padding: 0 var(--space-2); gap: var(--space-1); font-size: 12px; }
+.yt-btn.is-done { color: var(--teal-ink); }
+
+/* ---------- IconButton ---------- */
+.yt-iconbtn {
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  width: 32px; height: 32px; padding: 0;
+  border: 1px solid transparent; border-radius: var(--radius-control);
+  background: transparent; color: var(--ink-2); cursor: pointer;
+}
+/* 通常は目立たない色（ゴーストボタンと同じ --ink-2）。hover は背景を出さず明度で示す。 */
+.yt-iconbtn:hover { color: var(--ink); }
+.yt-iconbtn--sm { width: 28px; height: 28px; }
+.yt-iconbtn:disabled { color: var(--ink-3); background: transparent; cursor: not-allowed; }
+.yt-iconbtn.is-done { color: var(--teal-ink); }
+
+/* 「URLコピー」。SP では文字を読み上げ用に残してアイコンだけにする。 */
+.yt-share .yt-btn__text { white-space: nowrap; }
+
+/* ---------- Message ---------- */
+.yt-msg { display: flex; align-items: flex-start; gap: var(--space-2); margin: 0; font: 400 13px/20px var(--font-sans); color: var(--ink-2); }
+.yt-msg:empty { display: none; }
+.yt-msg--warn { color: var(--amber-ink); }
+.yt-msg--error { color: var(--danger-ink); }
+/* JS が文言だけを入れる器。空なら畳み、文言が入ったらアイコンを前に出す。 */
+.yt-msg[data-icon-warn]:not(:empty)::before,
+.yt-msg[data-icon-error]:not(:empty)::before {
+  content: ""; flex: 0 0 auto; width: 16px; height: 16px; margin-top: 2px;
+  background: currentColor;
+  -webkit-mask: var(--yt-msg-icon) center / 16px 16px no-repeat;
+  mask: var(--yt-msg-icon) center / 16px 16px no-repeat;
+}
+.yt-msg[data-icon-warn] { --yt-msg-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4.5l8.5 15h-17z'/%3E%3Cpath d='M12 10.5v4M12 17.25v.01'/%3E%3C/svg%3E"); }
+.yt-msg[data-icon-error] { --yt-msg-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='8.5'/%3E%3Cpath d='M12 7.75v5M12 16.25v.01'/%3E%3C/svg%3E"); }
+
+/* ---------- 翻訳型（yt-tr）：上段＋カード（設定帯 → 入力 ｜ 出力） ---------- */
+/* 設定帯の名前を押すと、その側だけの折り畳み（.yt-tr__pop）が入出力の上に重なって出る。 */
+.yt-tr {
+  width: 100%; max-width: calc(1120px + 2 * var(--space-6)); margin: 0 auto;
+  display: flex; flex-direction: column; gap: var(--space-4);
+  padding: var(--space-5) var(--space-6);
+  min-height: 0;
+}
+.yt-tr__card {
+  position: relative; flex: 1 1 auto; min-height: 0;
+  display: flex; flex-direction: column;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); overflow: hidden;
+}
+.yt-tr__bar {
+  flex: 0 0 auto; display: flex; align-items: center; gap: var(--space-2);
+  min-height: 56px; padding: var(--space-1) var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+.yt-tr__side { flex: 1 1 0; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.yt-tr__side--out { padding-left: var(--space-3); }
+/* 設定帯の名前。押すとその側の折り畳みを開く。開いている側は下線とシェブロンの向きで示す。 */
+.yt-tr__name {
+  display: inline-flex; align-items: center; gap: var(--space-2); max-width: 100%;
+  height: 44px; padding: 2px var(--space-2) 0 var(--space-3);
+  border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent;
+  color: var(--ink); font: 700 15px/22px var(--font-sans); cursor: pointer; white-space: nowrap;
+}
+.yt-tr__name > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.yt-tr__name .yt-icon { color: var(--ink-3); }
+.yt-tr__name[aria-expanded="true"] { border-bottom-color: var(--coral); }
+.yt-tr__name[aria-expanded="true"] .yt-icon { transform: rotate(180deg); }
+.yt-tr__swap { width: 40px; height: 40px; border-radius: 20px; }
+
+.yt-tr__panes { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.yt-tr__pane { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.yt-tr__pane + .yt-tr__pane { border-left: 1px solid var(--line); }
+.yt-tr__pane--out { background: var(--surface-sunken); }
+.yt-tr__area {
+  flex: 1 1 auto; min-height: 0; width: 100%; margin: 0;
+  padding: var(--space-4) 56px var(--space-2) var(--space-5);
+  border: 0; background: transparent; color: var(--ink);
+  font: 400 22px/34px var(--font-mono); resize: none; word-break: break-all; white-space: pre-wrap; overflow: auto;
+}
+.yt-tr__area:focus { outline: none; }
+.yt-tr__area::placeholder { color: var(--ink-3); }
+.yt-tr__area--out { padding-right: var(--space-5); }
+.yt-tr__corner { position: absolute; top: var(--space-2); right: var(--space-2); display: flex; gap: 2px; }
+.yt-tr__foot { flex: 0 0 auto; display: flex; align-items: center; gap: var(--space-2); min-height: 44px; padding: 0 var(--space-3) var(--space-1) var(--space-5); }
+.yt-tr__msgs { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.yt-tr__msgs .yt-msg { font-size: 12px; line-height: 18px; }
+.yt-tr__count { margin-left: auto; font: 400 12px/18px var(--font-mono); color: var(--ink-2); white-space: nowrap; }
+.yt-tr__actions { margin-left: auto; display: flex; align-items: center; gap: 2px; }
+
+/* 折り畳み。設定帯のすぐ下（top は main.js が設定帯の高さから決める）に、入出力の上へ重ねる。 */
+.yt-tr__pop {
+  position: absolute; left: 0; right: 0; top: 57px; z-index: 10;
+  max-height: calc(100% - 57px); overflow: auto;
+  display: flex; flex-direction: column;
+  background: var(--surface); border-top: 1px solid var(--line); box-shadow: var(--shadow-pop);
+}
+.yt-tr__pop-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-1) var(--space-2) 0 var(--space-5); }
+.yt-tr__close .yt-icon { transform: rotate(180deg); }
+.yt-tr__pop-title { display: flex; align-items: center; gap: 2px; margin: 0; font: 700 13px/20px var(--font-sans); color: var(--ink); }
+/* 候補のボタン。選択中はチェックと太字。 */
+.yt-tr__choices { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); }
+.yt-tr__pop-head + .yt-tr__choices { padding: 0 var(--space-3) var(--space-3); }
+.yt-tr__choice {
+  display: inline-flex; align-items: center; gap: var(--space-2); height: 40px; padding: 0 var(--space-3) 0 var(--space-2);
+  border: 0; border-radius: var(--radius-control); background: transparent; color: var(--ink);
+  font: 400 14px/20px var(--font-sans); cursor: pointer; white-space: nowrap;
+}
+.yt-tr__choice::before {
+  content: ""; flex: 0 0 auto; width: 16px; height: 16px; background: transparent;
+  -webkit-mask: var(--yt-check-icon) center / 16px 16px no-repeat; mask: var(--yt-check-icon) center / 16px 16px no-repeat;
+}
+.yt-tr__choice[aria-pressed="true"] { font-weight: 700; }
+.yt-tr__choice[aria-pressed="true"]::before { background: var(--coral-ink); }
+.yt-tr__choice { --yt-check-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E"); }
+
+@media (max-width: 720px) {
+  .yt-tr { padding: var(--space-3) var(--space-4); gap: var(--space-3); }
+  .yt-tr__panes { grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(0, 1fr); }
+  .yt-tr__pane + .yt-tr__pane { border-left: 0; border-top: 1px solid var(--line); }
+  .yt-tr__side--out { padding-left: 0; }
+  .yt-tr__area { font-size: 18px; line-height: 28px; padding: var(--space-3) 52px var(--space-1) var(--space-4); }
+  .yt-tr__foot { padding-left: var(--space-4); }
+  .yt-tr__pop-head { padding-left: var(--space-4); padding-right: var(--space-4); }
+}
+
+@media (max-width: 640px) {
+  .yt-btn { height: 44px; font-size: 16px; }
+  .yt-iconbtn { width: 44px; height: 44px; }
+  .yt-btn.yt-share { width: 44px; padding: 0; }
+  .yt-share .yt-btn__text {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0s !important; transition-delay: 0s !important; animation-duration: 0s !important; }
+}
+
+/* ============ 翻訳 ============ */
+
+.dt-noscript {
+  padding: var(--space-4) var(--space-6);
+}
+
+.dt-main .dt-card {
+  flex: 0 0 auto;
+}
+
+.dt-main .yt-tr__panes {
+  height: 300px;
+}
+
+@media (max-width: 720px) {
+  .dt-main .yt-tr__panes {
+    height: 440px;
+  }
+}
+
+@media (max-width: 640px) {
+  .dt-noscript {
+    padding: var(--space-3) var(--space-4);
+  }
+}
